@@ -1,106 +1,118 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Schulziegen – Ziege des Monats</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+/**
+ * SCHULZIEGEN — nav.js
+ * Baut den gemeinsamen Header und die Navigation auf jeder Seite auf.
+ * Wird NACH data.js eingebunden.
+ *
+ * Nutzung in jeder HTML-Seite:
+ *   <div id="nav-root"></div>
+ *   <script src="data.js"></script>
+ *   <script src="nav.js"></script>
+ *   <script> buildNav('gallery'); </script>   ← aktuelle Seite angeben
+ */
 
-<div id="nav-root"></div>
+function buildNav(activePage) {
+  const isAdmin = isAdminLoggedIn();
 
-<main class="app-main">
-  <div class="page-title">⭐ Ziege des Monats</div>
-  <div id="gotm-body"></div>
-</main>
+  const pages = [
+    { id:'gallery',    href:'/OhmoorZiegen/index.html',      icon:'🐐', label:'Ziegen'    },
+    { id:'stammbaum', href:'/OhmoorZiegen/stammbaum.html',   icon:'🌳', label:'Stammbaum' },
+    { id:'monat',     href:'/OhmoorZiegen/monat.html',       icon:'⭐', label:'Monat'     },
+    { id:'quiz',      href:'/OhmoorZiegen/quiz.html',        icon:'🧠', label:'Quiz'      },
+    { id:'memory',    href:'/OhmoorZiegen/memory.html',      icon:'🃏', label:'Memory'    },
+    { id:'rangliste', href:'/OhmoorZiegen/rangliste.html',   icon:'🏆', label:'Rangliste' },
+    { id:'fakten',    href:'/OhmoorZiegen/fakten.html',      icon:'💡', label:'Fakten'    },
+  ];
 
-<script src="data.js"></script>
-<script src="nav.js"></script>
-<script>
-buildNav('monat');
+  // Alle Seiten-Links (Desktop-Tabs + Drawer)
+  const tabsHtml = pages.map(p => `
+    <a class="nav-tab${p.id === activePage ? ' active' : ''}" href="${p.href}" data-page="${p.id}">
+      <span class="nav-tab-icon">${p.icon}</span> ${p.label}
+    </a>`).join('');
 
-function render() {
-  const goats  = getGoats();
-  const sorted = [...goats].sort((a, b) => b.votes - a.votes);
-  const w      = sorted[0];
-  const total  = goats.reduce((s, g) => s + g.votes, 0);
-  const votedId = getVotedId();
+  // Bottom Nav (Handy) — nur die 5 wichtigsten
+  const bottomPages = [
+    { id:'gallery',   href:'/OhmoorZiegen/index.html',    icon:'🐐', label:'Ziegen'   },
+    { id:'quiz',      href:'/OhmoorZiegen/quiz.html',     icon:'🧠', label:'Quiz'     },
+    { id:'memory',    href:'/OhmoorZiegen/memory.html',   icon:'🃏', label:'Memory'   },
+    { id:'rangliste', href:'/OhmoorZiegen/rangliste.html',icon:'🏆', label:'Rangliste'},
+    { id:'fakten',    href:'/OhmoorZiegen/fakten.html',   icon:'💡', label:'Fakten'   },
+  ];
 
-  const wph = (w.photos && w.photos.length)
-    ? `<img src="${w.photos[0]}" alt="${w.name}">`
-    : w.foto
-      ? `<img src="${w.foto}" alt="${w.name}" onerror="this.style.display='none'">`
-      : w.e;
+  const bottomHtml = bottomPages.map(p => `
+    <a class="bottom-nav-item${p.id === activePage ? ' active' : ''}" href="${p.href}" data-page="${p.id}">
+      <span class="bottom-nav-icon">${p.icon}</span>${p.label}
+    </a>`).join('');
 
-  document.getElementById('gotm-body').innerHTML = `
-    <div class="gotm-card">
-      <div class="gotm-photo">${wph}</div>
-      <div>
-        <div class="gotm-label">Ziege des Monats</div>
-        <div class="gotm-name">${w.name}</div>
-        <div class="gotm-sub">${w.nick} · ${w.character}</div>
-        <div class="gotm-votes">♥ ${w.votes} Stimmen${total > 0 ? ` · ${Math.round(w.votes / total * 100)}%` : ''}</div>
+  const drawerItems = pages.map(p => `
+    <a class="drawer-item" href="${p.href}">
+      <span class="drawer-item-icon">${p.icon}</span>${p.label}
+    </a>`).join('');
+
+  const html = `
+    <!-- Header -->
+    <header class="app-header">
+      <a class="app-logo" href="index.html">
+        <span class="app-logo-icon">🐐</span>
+        Schul<span>ziegen</span>
+      </a>
+
+      <div class="header-right">
+        ${isAdmin ? `<a href="admin.html" style="font-size:11px;font-weight:600;padding:5px 10px;background:var(--clr-yellow-light);color:var(--clr-yellow);border-radius:var(--radius-full);text-decoration:none;border:1px solid var(--clr-yellow)">● Admin</a>` : ''}
+        <button class="icon-btn" onclick="toggleDrawerNav()" aria-label="Menü">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+            <rect y="2"  width="18" height="2" rx="1"/>
+            <rect y="8"  width="18" height="2" rx="1"/>
+            <rect y="14" width="18" height="2" rx="1"/>
+          </svg>
+        </button>
       </div>
-    </div>
+    </header>
 
-    ${total === 0
-      ? `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:16px">
-           Noch keine Stimmen – gehe zu einer Ziege und stimme ab!
-         </p>`
-      : ''}
+    <!-- Desktop-Tabs -->
+    <nav class="nav-tabs">${tabsHtml}</nav>
 
-    <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--clr-text-faint);margin-bottom:12px">
-      Abstimmungsergebnis
-    </div>
+    <!-- Handy Bottom Navigation -->
+    <nav class="bottom-nav">${bottomHtml}</nav>
 
-    <div id="vote-list">
-      ${sorted.map(g => {
-        const ph = (g.photos && g.photos.length)
-          ? `<img src="${g.photos[0]}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0">`
-          : g.foto
-            ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
-            : `<span style="font-size:18px">${g.e}</span>`;
-        const pct = total > 0 ? Math.round(g.votes / total * 100) : 0;
-        return `<div class="vote-row">
-          ${ph}
-          <a href="ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${g.name}</a>
-          <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%"></div></div>
-          <span class="vote-row-count">♥ ${g.votes}</span>
-          ${votedId === null
-            ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Abstimmen</button>`
-            : votedId === g.id
-              ? `<span style="font-size:12px;color:var(--clr-green);font-weight:600">✓ Deine Wahl</span>`
-              : `<span style="font-size:12px;color:var(--clr-text-faint)">—</span>`
-          }
-        </div>`;
-      }).join('')}
-    </div>
+    <!-- Drawer Overlay -->
+    <div class="drawer-overlay" id="nav-dov" onclick="closeDrawerNav()"></div>
+    <div class="drawer" id="nav-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">🐐 Schulziegen</span>
+        <button class="drawer-close" onclick="closeDrawerNav()">✕</button>
+      </div>
+      <div class="drawer-body">
+        <div class="drawer-section-label">Seiten</div>
+        ${drawerItems}
+        ${isAdmin ? `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔐</span>Admin-Bereich</a>` : ''}
+        <div class="drawer-section-label" style="margin-top:8px">Einstellungen</div>
+        <div class="dark-mode-row">
+          <div class="dark-mode-label"><span>🌙</span>Dark Mode</div>
+          <label class="toggle">
+            <input type="checkbox" id="dark-tog" onchange="toggleDark()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        ${isAdmin
+          ? `<button class="drawer-item" onclick="adminLogout();location.href='index.html'"><span class="drawer-item-icon">🚪</span>Admin abmelden</button>`
+          : `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔑</span>Admin-Login</a>`
+        }
+      </div>
+    </div>`;
 
-    ${isAdminLoggedIn() ? `
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border-soft)">
-        <button class="btn-danger" onclick="doResetVotes()">Alle Stimmen zurücksetzen</button>
-      </div>` : ''}`;
+  const root = document.getElementById('nav-root');
+  if (root) root.innerHTML = html;
+
+  // Dark Mode sofort anwenden
+  applyDark();
 }
 
-function doVote(id) {
-  if (getVotedId() !== null) return;
-  const goats = getGoats();
-  const g = goats.find(g => g.id === id);
-  if (!g) return;
-  g.votes++;
-  setVotedId(id);
-  saveGoats(goats);
-  render();
+function toggleDrawerNav() {
+  document.getElementById('nav-dov').classList.toggle('open');
+  document.getElementById('nav-drawer').classList.toggle('open');
 }
 
-function doResetVotes() {
-  if (!confirm('Alle Stimmen zurücksetzen?')) return;
-  resetAllVotes();
-  render();
+function closeDrawerNav() {
+  document.getElementById('nav-dov').classList.remove('open');
+  document.getElementById('nav-drawer').classList.remove('open');
 }
-
-render();
-</script>
-</body>
-</html>

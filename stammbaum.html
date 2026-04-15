@@ -3,77 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Schulziegen – Rangliste</title>
-<link rel="stylesheet" href="style.css">
+<title>Schulziegen – Stammbaum</title>
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
 </head>
 <body>
 
 <div id="nav-root"></div>
 
 <main class="app-main">
-  <div class="page-title">🏆 Rangliste – Memory</div>
-  <p class="section-sub">Die besten Ergebnisse aller Spieler. Wenigste Züge gewinnt!</p>
-  <div id="lb-body"></div>
+  <div class="page-title">🌳 Stammbaum</div>
+  <p class="section-sub">Klicke auf eine Ziege, um mehr über sie zu erfahren.</p>
+  <div id="tree-body"></div>
 </main>
 
-<script src="data.js"></script>
-<script src="nav.js"></script>
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
 <script>
-buildNav('rangliste');
+buildNav('stammbaum');
 
-function render() {
-  const scores = getScores();
-  const myName = getDisplayName();
-  const lb = document.getElementById('lb-body');
+const goats = getGoats();
 
-  if (!scores.length) {
-    lb.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-state-icon">🃏</span>
-        <div class="empty-state-text">Noch keine Einträge</div>
-        <div class="empty-state-sub">Spiele Memory und komm in die Rangliste!</div>
-        <a href="memory.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Memory spielen</a>
-      </div>`;
-    return;
-  }
-
-  const medals = ['🥇','🥈','🥉'];
-
-  lb.innerHTML = `
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${scores.map((s, i) => {
-          const isYou = s.username === myName;
-          return `<tr class="${isYou ? 'lb-you' : ''}">
-            <td class="lb-rank">${i + 1}</td>
-            <td class="lb-medal">${medals[i] || ''}</td>
-            <td>${s.username}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
-            <td class="lb-score">${s.moves}</td>
-            <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs} Paare</td>
-            <td class="lb-time">${s.date}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-
-    ${isAdminLoggedIn() ? `
-      <div style="margin-top:16px">
-        <button class="btn-danger" onclick="doReset()">Rangliste leeren</button>
-      </div>` : ''}`;
+function nodeHtml(g) {
+  const ph = (g.photos && g.photos.length)
+    ? `<img src="${g.photos[0]}" alt="${g.name}">`
+    : g.foto
+      ? `<img src="${g.foto}" alt="${g.name}" onerror="this.style.display='none'">`
+      : g.e;
+  return `<a class="tree-node" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
+    <div class="tree-avatar">${ph}</div>
+    <div class="tree-node-name">${g.name}</div>
+    <div class="tree-node-age">${g.age}</div>
+  </a>`;
 }
 
-function doReset() {
-  if (!confirm('Rangliste wirklich leeren?')) return;
-  clearScores();
-  render();
-}
+const g0 = goats.filter(g => !g.mother);
+const g1 = goats.filter(g => g.mother && g0.find(gg => gg.name === g.mother));
+const g2 = goats.filter(g => g.mother && g1.find(gg => gg.name === g.mother));
+const rels = goats.filter(g => g.mother);
 
-render();
+document.getElementById('tree-body').innerHTML = `
+  <div class="tree-generation-label">Gründerziegen (keine Mutter bekannt)</div>
+  <div class="tree-level">${g0.map(nodeHtml).join('')}</div>
+
+  ${g1.length ? `
+    <div class="tree-arrow">↓</div>
+    <div class="tree-generation-label">1. Generation</div>
+    <div class="tree-level">${g1.map(nodeHtml).join('')}</div>
+  ` : ''}
+
+  ${g2.length ? `
+    <div class="tree-arrow">↓</div>
+    <div class="tree-generation-label">2. Generation</div>
+    <div class="tree-level">${g2.map(nodeHtml).join('')}</div>
+  ` : ''}
+
+  <div class="tree-relations" style="margin-top:28px">
+    <div class="tree-rel-header">Alle Mutter-Kind-Beziehungen</div>
+    ${rels.length ? rels.map(g => `
+      <div class="tree-rel-row">
+        <strong>${g.mother}</strong>
+        <span style="color:var(--clr-text-faint)">→</span>
+        <a href="/OhmoorZiegen/ziege.html?id=${g.id}" style="color:var(--clr-blue);text-decoration:none;font-weight:500">${g.name}</a>
+        <span style="color:var(--clr-text-faint);font-size:12px">${g.nick}</span>
+      </div>`).join('')
+    : '<div class="tree-rel-row" style="color:var(--clr-text-muted)">Keine Beziehungen gefunden.</div>'}
+  </div>`;
 </script>
 </body>
 </html>

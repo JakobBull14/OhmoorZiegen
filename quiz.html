@@ -1,118 +1,101 @@
-/**
- * SCHULZIEGEN — nav.js
- * Baut den gemeinsamen Header und die Navigation auf jeder Seite auf.
- * Wird NACH data.js eingebunden.
- *
- * Nutzung in jeder HTML-Seite:
- *   <div id="nav-root"></div>
- *   <script src="data.js"></script>
- *   <script src="nav.js"></script>
- *   <script> buildNav('gallery'); </script>   ← aktuelle Seite angeben
- */
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Quiz</title>
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
 
-function buildNav(activePage) {
-  const isAdmin = isAdminLoggedIn();
+<div id="nav-root"></div>
 
-  const pages = [
-    { id:'gallery',    href:'index.html',      icon:'🐐', label:'Ziegen'    },
-    { id:'stammbaum', href:'stammbaum.html',   icon:'🌳', label:'Stammbaum' },
-    { id:'monat',     href:'monat.html',       icon:'⭐', label:'Monat'     },
-    { id:'quiz',      href:'quiz.html',        icon:'🧠', label:'Quiz'      },
-    { id:'memory',    href:'memory.html',      icon:'🃏', label:'Memory'    },
-    { id:'rangliste', href:'rangliste.html',   icon:'🏆', label:'Rangliste' },
-    { id:'fakten',    href:'fakten.html',      icon:'💡', label:'Fakten'    },
-  ];
+<main class="app-main">
+  <div class="page-title">🧠 Ziegen-Quiz</div>
+  <div class="quiz-wrap" id="quiz-body"></div>
+</main>
 
-  // Alle Seiten-Links (Desktop-Tabs + Drawer)
-  const tabsHtml = pages.map(p => `
-    <a class="nav-tab${p.id === activePage ? ' active' : ''}" href="${p.href}" data-page="${p.id}">
-      <span class="nav-tab-icon">${p.icon}</span> ${p.label}
-    </a>`).join('');
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('quiz');
 
-  // Bottom Nav (Handy) — nur die 5 wichtigsten
-  const bottomPages = [
-    { id:'gallery',   href:'index.html',    icon:'🐐', label:'Ziegen'   },
-    { id:'quiz',      href:'quiz.html',     icon:'🧠', label:'Quiz'     },
-    { id:'memory',    href:'memory.html',   icon:'🃏', label:'Memory'   },
-    { id:'rangliste', href:'rangliste.html',icon:'🏆', label:'Rangliste'},
-    { id:'fakten',    href:'fakten.html',   icon:'💡', label:'Fakten'   },
-  ];
+let quizQuestions = getQuiz();
+let quizState = null;
 
-  const bottomHtml = bottomPages.map(p => `
-    <a class="bottom-nav-item${p.id === activePage ? ' active' : ''}" href="${p.href}" data-page="${p.id}">
-      <span class="bottom-nav-icon">${p.icon}</span>${p.label}
-    </a>`).join('');
+function startQuiz() {
+  const qs = [...quizQuestions]
+    .sort(() => Math.random() - .5)
+    .slice(0, Math.min(7, quizQuestions.length));
+  quizState = { idx: 0, score: 0, questions: qs, answered: false };
+  renderQuiz();
+}
 
-  const drawerItems = pages.map(p => `
-    <a class="drawer-item" href="${p.href}">
-      <span class="drawer-item-icon">${p.icon}</span>${p.label}
-    </a>`).join('');
+function renderQuiz() {
+  const { idx, score, questions } = quizState;
+  const qb = document.getElementById('quiz-body');
 
-  const html = `
-    <!-- Header -->
-    <header class="app-header">
-      <a class="app-logo" href="index.html">
-        <span class="app-logo-icon">🐐</span>
-        Schul<span>ziegen</span>
-      </a>
-
-      <div class="header-right">
-        ${isAdmin ? `<a href="admin.html" style="font-size:11px;font-weight:600;padding:5px 10px;background:var(--clr-yellow-light);color:var(--clr-yellow);border-radius:var(--radius-full);text-decoration:none;border:1px solid var(--clr-yellow)">● Admin</a>` : ''}
-        <button class="icon-btn" onclick="toggleDrawerNav()" aria-label="Menü">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-            <rect y="2"  width="18" height="2" rx="1"/>
-            <rect y="8"  width="18" height="2" rx="1"/>
-            <rect y="14" width="18" height="2" rx="1"/>
-          </svg>
+  if (idx >= questions.length) {
+    const pct = Math.round(score / questions.length * 100);
+    const em  = pct >= 80 ? '🏆' : pct >= 50 ? '😊' : '🐐';
+    const msg = pct >= 80 ? 'Ziegenexperte!' : pct >= 50 ? 'Gut gemacht!' : 'Übe weiter!';
+    qb.innerHTML = `
+      <div class="quiz-score">
+        <span class="quiz-score-emoji">${em}</span>
+        <div class="quiz-score-number">${score} / ${questions.length}</div>
+        <div class="quiz-score-msg">${msg}</div>
+        <button class="btn-primary" style="margin:20px auto 0;display:block" onclick="startQuiz()">
+          Nochmal spielen
         </button>
-      </div>
-    </header>
+      </div>`;
+    return;
+  }
 
-    <!-- Desktop-Tabs -->
-    <nav class="nav-tabs">${tabsHtml}</nav>
-
-    <!-- Handy Bottom Navigation -->
-    <nav class="bottom-nav">${bottomHtml}</nav>
-
-    <!-- Drawer Overlay -->
-    <div class="drawer-overlay" id="nav-dov" onclick="closeDrawerNav()"></div>
-    <div class="drawer" id="nav-drawer">
-      <div class="drawer-header">
-        <span class="drawer-title">🐐 Schulziegen</span>
-        <button class="drawer-close" onclick="closeDrawerNav()">✕</button>
-      </div>
-      <div class="drawer-body">
-        <div class="drawer-section-label">Seiten</div>
-        ${drawerItems}
-        ${isAdmin ? `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔐</span>Admin-Bereich</a>` : ''}
-        <div class="drawer-section-label" style="margin-top:8px">Einstellungen</div>
-        <div class="dark-mode-row">
-          <div class="dark-mode-label"><span>🌙</span>Dark Mode</div>
-          <label class="toggle">
-            <input type="checkbox" id="dark-tog" onchange="toggleDark()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-        ${isAdmin
-          ? `<button class="drawer-item" onclick="adminLogout();location.href='index.html'"><span class="drawer-item-icon">🚪</span>Admin abmelden</button>`
-          : `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔑</span>Admin-Login</a>`
-        }
-      </div>
-    </div>`;
-
-  const root = document.getElementById('nav-root');
-  if (root) root.innerHTML = html;
-
-  // Dark Mode sofort anwenden
-  applyDark();
+  const q = questions[idx];
+  qb.innerHTML = `
+    <div class="quiz-progress">
+      <div class="quiz-progress-bar" style="width:${idx / questions.length * 100}%"></div>
+    </div>
+    <div class="quiz-meta">Frage ${idx + 1} von ${questions.length}</div>
+    <span class="quiz-emoji">${q.e}</span>
+    <div class="quiz-question">${q.q}</div>
+    <div class="quiz-options">
+      ${q.a.map((a, i) => `
+        <button class="quiz-option" id="qo${i}" onclick="answerQ(${i})">${a}</button>
+      `).join('')}
+    </div>
+    <div id="q-fb"></div>`;
 }
 
-function toggleDrawerNav() {
-  document.getElementById('nav-dov').classList.toggle('open');
-  document.getElementById('nav-drawer').classList.toggle('open');
+function answerQ(ch) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  const q  = quizState.questions[quizState.idx];
+  const ok = q.c === ch;
+  if (ok) quizState.score++;
+
+  document.querySelectorAll('.quiz-option').forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.c)       b.classList.add('correct');
+    else if (i === ch && !ok) b.classList.add('wrong');
+  });
+
+  document.getElementById('q-fb').innerHTML = `
+    <div class="quiz-feedback ${ok ? 'correct' : 'wrong'}">
+      ${ok ? '✓ Richtig!' : `✗ Falsch. Richtig war: <strong>${q.a[q.c]}</strong>`}
+    </div>
+    <button class="btn-primary" style="margin-top:14px" onclick="nextQ()">
+      ${quizState.idx + 1 < quizState.questions.length ? 'Weiter →' : 'Ergebnis anzeigen'}
+    </button>`;
 }
 
-function closeDrawerNav() {
-  document.getElementById('nav-dov').classList.remove('open');
-  document.getElementById('nav-drawer').classList.remove('open');
+function nextQ() {
+  quizState.idx++;
+  quizState.answered = false;
+  renderQuiz();
 }
+
+startQuiz();
+</script>
+</body>
+</html>

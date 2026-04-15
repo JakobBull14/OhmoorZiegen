@@ -1,105 +1,91 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Schulziegen – Alle Ziegen</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+# 🐐 Schulziegen-App
 
-<div id="nav-root"></div>
+Eine App für alle Schüler von Jakobs Schule — zum Kennenlernen der Schulziegen!
 
-<main class="app-main">
+---
 
-  <!-- Hero-Bar -->
-  <div class="hero-bar">
-    <div class="hero-bar-text">
-      <h1>Unsere Schulziegen 🐐</h1>
-      <p>Lerne alle 9 Ziegen unserer Schule kennen!</p>
-    </div>
-    <span class="hero-bar-emoji">🌿</span>
-  </div>
+## 📁 So ist der Ordner aufgebaut
 
-  <!-- Suchfeld (Mobil) -->
-  <div style="position:relative;margin-bottom:16px">
-    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:16px;pointer-events:none">🔍</span>
-    <input type="text" id="srch"
-           style="width:100%;padding:10px 14px 10px 38px;border:1px solid var(--clr-border);border-radius:var(--radius-full);background:var(--clr-bg-subtle);color:var(--clr-text);font-family:var(--font-body);font-size:14px;outline:none"
-           placeholder="Ziege suchen …" oninput="onSearch()" autocomplete="off">
-  </div>
+```
+schulziegen/
+│
+├── index.html        ← Startseite (Galerie aller Ziegen)
+├── ziege.html        ← Detail-Seite einer Ziege
+├── stammbaum.html    ← Familien-Stammbaum
+├── monat.html        ← Ziege des Monats + Abstimmung
+├── quiz.html         ← Ziegen-Quiz
+├── memory.html       ← Memory-Spiel
+├── rangliste.html    ← Bestenliste Memory
+├── fakten.html       ← Wissenswertes über Ziegen
+├── admin.html        ← Admin-Bereich (nur für Lehrer)
+│
+├── data.js           ← Alle Ziegen-Daten (hier werden Änderungen gespeichert)
+├── nav.js            ← Navigation (gilt für alle Seiten)
+├── style.css         ← Das Design (gilt für alle Seiten)
+│
+└── bilder/           ← HIER kommen die Ziegenfotos rein!
+    ├── Olaf.jpg
+    ├── Bella.jpg
+    ├── Flecki.jpg
+    ├── Berta.jpg
+    ├── Mecki.jpg
+    ├── Hoppel.jpg
+    ├── Zara.jpg
+    ├── Knopf.jpg
+    └── Sturm.jpg
+```
 
-  <div class="gallery-meta" id="gal-meta"></div>
-  <div class="gallery-grid" id="gal-grid"></div>
-  <div class="hidden" id="no-res" style="text-align:center;padding:60px 20px">
-    <div style="font-size:48px;margin-bottom:12px">🔍</div>
-    <div style="font-size:15px;color:var(--clr-text-muted)">Keine Ziege gefunden</div>
-  </div>
+---
 
-</main>
+## 🖼️ Bilder einbinden
 
-<script src="data.js"></script>
-<script src="nav.js"></script>
-<script>
-buildNav('gallery');
+1. Legt einen Ordner namens `bilder` an (klein geschrieben)
+2. Kopiert eure Fotos in diesen Ordner
+3. Benennt die Fotos **genau wie die Ziegen** (Groß-/Kleinschreibung beachten!):
+   - `Olaf.jpg` ✅
+   - `olaf.jpg` ❌
+   - `Olaf1.jpg` ❌
 
-let goats = getGoats();
-let filtered = [...goats];
+Falls ein Bild nicht gefunden wird, zeigt die App automatisch ein 🐐 Emoji.
 
-function onSearch() {
-  const q = document.getElementById('srch').value.toLowerCase().trim();
-  filtered = q
-    ? goats.filter(g =>
-        g.name.toLowerCase().includes(q) ||
-        g.nick.toLowerCase().includes(q) ||
-        g.character.toLowerCase().includes(q))
-    : [...goats];
-  renderGallery();
-}
+**Falls eure Bilder `.png` statt `.jpg` sind:** In `data.js` in Zeile 17 ändern:
+```
+const BILDER_ENDUNG = '.png';
+```
 
-function renderGallery() {
-  const grid = document.getElementById('gal-grid');
-  const nr   = document.getElementById('no-res');
-  const meta = document.getElementById('gal-meta');
+---
 
-  if (!filtered.length) {
-    grid.innerHTML = '';
-    nr.classList.remove('hidden');
-    meta.textContent = '';
-    return;
-  }
-  nr.classList.add('hidden');
-  meta.textContent = filtered.length === goats.length
-    ? `${goats.length} Ziegen`
-    : `${filtered.length} von ${goats.length} Ziegen`;
+## 🔐 Admin-Bereich
 
-  grid.innerHTML = filtered.map(g => {
-    // Foto: hochgeladen → bilder/-Ordner → Emoji
-    const ph = (g.photos && g.photos.length)
-      ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
-      : g.foto
-        ? `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'"><span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
-        : `<span style="font-size:3.5rem">${g.e}</span>`;
-    const cnt = g.photos && g.photos.length > 1
-      ? `<div class="gc-photo-count">📷 ${g.photos.length}</div>` : '';
-    const vt  = g.votes > 0
-      ? `<div class="gc-badge">♡ ${g.votes}</div>` : '';
+- Adresse: `admin.html`
+- Passwort: **ZiegenAdmin2025**
+- Passwort ändern: In `data.js` Zeile 30 — dort steht `hashPw('ZiegenAdmin2025')`
 
-    return `<a class="goat-card" href="ziege.html?id=${g.id}" style="text-decoration:none">
-      <div class="goat-card-image">${ph}${cnt}${vt}</div>
-      <div class="goat-card-body">
-        <div class="goat-card-name">${g.name}</div>
-        <div class="goat-card-nick">${g.nick}</div>
-        <div class="goat-card-chips">
-          <span class="chip">🎂 ${g.age}</span>
-          ${g.mother ? `<span class="chip chip-blue">↑ ${g.mother}</span>` : ''}
-        </div>
-      </div>
-    </a>`;
-  }).join('');
-}
+Als Admin könnt ihr:
+- Neue Ziegen hinzufügen oder entfernen
+- Texte direkt auf der Ziegen-Seite bearbeiten (einfach anklicken)
+- Fotos hochladen
+- Quiz-Fragen bearbeiten
+- Abstimmungen zurücksetzen
 
-renderGallery();
-</script>
-</body>
-</html>
+---
+
+## 🌐 Auf GitHub veröffentlichen
+
+1. GitHub-Account erstellen (kostenlos) auf **github.com**
+2. Neues Repository anlegen → Name z.B. `schulziegen`
+3. Alle Dateien hochladen (inkl. `bilder/`-Ordner)
+4. Unter **Settings → Pages** → Source: `main` Branch auswählen
+5. GitHub gibt euch eine Adresse wie `https://euername.github.io/schulziegen`
+6. Diese Adresse an alle Schüler weitergeben — fertig! 🎉
+
+---
+
+## 📱 Handy
+
+Die App funktioniert auf dem Handy genauso wie auf dem Computer.
+Auf kleinen Bildschirmen erscheint automatisch eine Navigation am unteren Rand.
+
+---
+
+*Gebaut mit ❤️ von Jakob und Claude*

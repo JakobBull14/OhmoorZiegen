@@ -1,310 +1,271 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Schulziegen – Admin</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+/**
+ * SCHULZIEGEN — data.js
+ * Gemeinsame Daten und Hilfsfunktionen für alle Seiten.
+ * Diese Datei wird von jeder HTML-Seite eingebunden.
+ */
 
-<div id="nav-root"></div>
+// ══════════════════════════════════════════
+// STORAGE HELPERS
+// ══════════════════════════════════════════
+const LS = {
+  g: (k)    => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  s: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del: (k)  => { try { localStorage.removeItem(k); } catch {} }
+};
 
-<main class="app-main">
+// ══════════════════════════════════════════
+// ADMIN-AUTH
+// ══════════════════════════════════════════
+function hashPw(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
+  return h.toString(36);
+}
 
-  <!-- LOGIN-MASKE (wird ausgeblendet wenn eingeloggt) -->
-  <div id="login-screen">
-    <div style="max-width:360px;margin:0 auto">
-      <div class="page-title">🔐 Admin-Login</div>
-      <p class="section-sub">Dieser Bereich ist nur für Lehrerinnen und Lehrer.</p>
-      <div class="form-group">
-        <label class="form-label">Admin-Passwort</label>
-        <input class="form-input" id="pw-input" type="password" placeholder="Passwort eingeben"
-               onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
-      <button class="btn-primary btn-primary-full" onclick="doLogin()">Anmelden</button>
-      <div class="auth-msg" id="login-msg"></div>
-      <div style="margin-top:16px;text-align:center">
-        <a href="index.html" style="font-size:13px;color:var(--clr-blue)">← Zurück zur App</a>
-      </div>
-    </div>
-  </div>
+const ADMIN_PW_HASH = hashPw('ZiegenAdmin2025'); // Passwort hier ändern!
 
-  <!-- ADMIN-INHALT (nur nach Login sichtbar) -->
-  <div id="admin-screen" class="hidden">
+function isAdminLoggedIn() {
+  return LS.g('sz_admin_session') === true;
+}
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px">
-      <div class="page-title" style="margin-bottom:0">🔐 Admin-Bereich</div>
-      <button class="btn-danger" onclick="doLogout()">Abmelden</button>
-    </div>
-
-    <div class="admin-badge" style="margin-bottom:28px">
-      ✓ Du bist als Admin angemeldet. Alle Ziegen-Texte und Fotos können direkt auf der Ziegen-Seite bearbeitet werden.
-    </div>
-
-    <div class="admin-wrap">
-
-      <!-- ZIEGE HINZUFÜGEN -->
-      <div class="admin-section">
-        <div class="admin-section-title">➕ Neue Ziege hinzufügen</div>
-        <div class="form-grid">
-          <div class="f-group"><label>Name *</label><input id="a-name" placeholder="z.B. Frieda"></div>
-          <div class="f-group"><label>Spitzname</label><input id="a-nick"></div>
-          <div class="f-group"><label>Rasse</label><input id="a-breed" placeholder="z.B. Zwergziege"></div>
-          <div class="f-group"><label>Alter</label><input id="a-age" placeholder="z.B. 3 Jahre"></div>
-          <div class="f-group"><label>Charakter</label><input id="a-char"></div>
-          <div class="f-group"><label>Lieblingsessen</label><input id="a-food"></div>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Mutter</label>
-          <select id="a-mother"></select>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Geschichte</label>
-          <textarea id="a-story" placeholder="Was macht diese Ziege besonders?"></textarea>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Besondere Fähigkeit</label>
-          <input id="a-skill">
-        </div>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="addGoat()">Ziege hinzufügen</button>
-        </div>
-        <div id="add-msg"></div>
-      </div>
-
-      <!-- ZIEGE ENTFERNEN -->
-      <div class="admin-section">
-        <div class="admin-section-title">🗑️ Ziege entfernen</div>
-        <div class="f-group">
-          <label>Ziege auswählen</label>
-          <select id="del-sel"></select>
-        </div>
-        <div class="btn-row">
-          <button class="btn-danger" onclick="removeGoat()">Ausgewählte Ziege entfernen</button>
-        </div>
-      </div>
-
-      <!-- QUIZ-EDITOR -->
-      <div class="admin-section">
-        <div class="admin-section-title">🧠 Quiz-Fragen bearbeiten</div>
-        <p class="section-sub">Änderungen werden automatisch gespeichert.</p>
-        <div id="quiz-editor"></div>
-        <button class="add-question-btn" onclick="addQuizQ()">+ Neue Frage hinzufügen</button>
-      </div>
-
-      <!-- MEMORY-EINSTELLUNGEN -->
-      <div class="admin-section">
-        <div class="admin-section-title">🃏 Memory-Einstellungen</div>
-        <div class="mem-config">
-          <div class="mem-config-row">
-            <label>Anzahl Paare:</label>
-            <select id="mem-pairs" class="form-input" style="width:auto" onchange="saveMemCfg()">
-              ${[3,4,5,6,7,8,9].map(n => `<option value="${n}">${n} Paare</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div id="mem-msg"></div>
-      </div>
-
-      <!-- AKTIONEN -->
-      <div class="admin-section">
-        <div class="admin-section-title">⚙️ Weitere Aktionen</div>
-        <div class="btn-row">
-          <button class="btn-danger" onclick="doResetVotes()">Alle Abstimmungs-Stimmen zurücksetzen</button>
-          <button class="btn-danger" onclick="doResetScores()">Rangliste leeren</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</main>
-
-<script src="data.js"></script>
-<script src="nav.js"></script>
-<script>
-buildNav('admin');
-
-// ── LOGIN ──
-function doLogin() {
-  const pw = document.getElementById('pw-input').value;
-  if (adminLogin(pw)) {
-    showAdmin();
-  } else {
-    const msg = document.getElementById('login-msg');
-    msg.textContent = 'Falsches Passwort.';
-    msg.className = 'auth-msg err';
-    document.getElementById('pw-input').value = '';
+function adminLogin(pw) {
+  if (hashPw(pw) === ADMIN_PW_HASH) {
+    LS.s('sz_admin_session', true);
+    return true;
   }
+  return false;
 }
 
-function doLogout() {
-  adminLogout();
-  document.getElementById('admin-screen').classList.add('hidden');
-  document.getElementById('login-screen').classList.remove('hidden');
+function adminLogout() {
+  LS.del('sz_admin_session');
 }
 
-function showAdmin() {
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('admin-screen').classList.remove('hidden');
-  initAdminForms();
-  renderQuizEditor();
-  // Nav neu bauen (jetzt mit Admin-Link)
-  buildNav('admin');
+// ══════════════════════════════════════════
+// BILDER-PFAD
+// ══════════════════════════════════════════
+// Alle Ziegenbilder liegen im Ordner "bilder/"
+// Dateiname = Name der Ziege + .jpg  (z.B. bilder/Olaf.jpg)
+// Falls ein Bild nicht gefunden wird, zeigt die App automatisch das Emoji.
+
+const BILDER_ORDNER = '/OhmoorZiegen/bilder/';
+const BILDER_ENDUNG = '.jpg'; // Falls eure Bilder .png sind, hier ändern
+
+function ziegenbild(name) {
+  return BILDER_ORDNER + name + BILDER_ENDUNG;
 }
 
-// Beim Laden prüfen
-if (isAdminLoggedIn()) { showAdmin(); }
+// ══════════════════════════════════════════
+// ZIEGEN-DATEN
+// ══════════════════════════════════════════
+const DEFAULT_GOATS = [
+  { id:1, name:"Polli",   nick:"Der Müllschlucker", breed:"Mischlingsziege",  age:"4 Jahre", character:"Allesfresser, frech",        food:"Plastik & Papier (und alles andere!)",  mother:"Tom",  story:"Olaf hat einmal einen ganzen Schulaufsatz gefressen – und der Lehrer hat es geglaubt! Er frisst buchstäblich alles: Plastikflaschen, Papier, Taschentücher, sogar einen Stundenplan.", skill:"Kann jeden Mülleimer öffnen. Weltmeister im Papierschreddern.",           e:"🐐" },
+  { id:2, name:"Pico",  nick:"Die Prinzessin",    breed:"Bunte Edelziege",  age:"6 Jahre", character:"Elegant, wählerisch",        food:"Nur Bio-Äpfel & frisches Gras",         mother:null,     story:"Bella ist die Älteste und weiß das genau. Sie lässt sich nur streicheln, wenn SIE es will. Bei Regen weigert sie sich hinauszugehen.",                                              skill:"Meisterin des selbstbewussten Blicks. Kann mit einem Augenaufschlag verzaubern.",   e:"🐐" },
+  { id:3, name:"Paul", nick:"Der Ausreißer",     breed:"Toggenburger Mix", age:"3 Jahre", character:"Abenteuerlustig, frech",     food:"Alles aus dem Lehrergarten",            mother:"Pico",  story:"Flecki hat es schon dreimal geschafft, aus dem Gehege zu entkommen – einmal bis in die Schulküche! Seitdem wird das Schloss doppelt geprüft.",                                    skill:"Experte im Schlösserknacken. Kann jede Lücke im Zaun finden.",                     e:"🐐" },
+  { id:4, name:"Tom",  nick:"Die Großmutter",    breed:"Weiße Hausziege",  age:"8 Jahre", character:"Gutmütig, geduldig",         food:"Weizenstroh & Möhren",                  mother:null,     story:"Berta ist so ruhig, dass sogar ängstliche Kinder sie streicheln. Sie hat schon drei Generationen von Schulkindern erlebt.",                                                      skill:"Kann ängstliche Kinder in 30 Sekunden beruhigen. Legende des Schulhofs.",          e:"🐐" },
+  { id:5, name:"Else",  nick:"Der Philosoph",     breed:"Burenziege Mix",   age:"5 Jahre", character:"Nachdenklich, ruhig",        food:"Frisches Heu, gemütlich gekaut",        mother:null,     story:"Mecki steht oft stundenlang auf dem Hügel und schaut in die Ferne. Niemand weiß, ob er meditiert oder einfach schläft.",                                                         skill:"Meditationsmeister. Kann alle um ihn herum entspannen.",                           e:"🐐" },
+  { id:6, name:"Pünktchen", nick:"Die Hüpferin",      breed:"Zwergziege",       age:"2 Jahre", character:"Wild, energiegeladen",       food:"Bananen, Äpfel – alles was hüpft",      mother:"Paul", story:"Hoppel springt über alles was ihr in den Weg kommt: Eimer, Kinder, manchmal sogar Mecki. Hochsprung-Rekord: 1,20 m!",                                                          skill:"Hält den Schulrekord im Ziegenhochsprung.",                                        e:"🐐" },
+  { id:7, name:"Charlotta",   nick:"Die Diva",          breed:"Saanen-Mix",       age:"3 Jahre", character:"Laut, dramatisch, charmant", food:"Rosenblätter – notfalls auch Gras",     mother:"Pico",  story:"Zara meckert laut, wenn das Frühstück auch nur eine Minute zu spät kommt. Einmal hat sie eine ganze Schulstunde unterbrochen!",                                                  skill:"Lautestes Meckern der Schule. Kann Unterricht stoppen.",                           e:"🐐" },
+  { id:8, name:"Balou",  nick:"Der Winzling",      breed:"Zwergziege",       age:"1 Jahr",  character:"Schüchtern, neugierig, süß", food:"Noch hauptsächlich Milch",              mother:"Charlotta",   story:"Knopf ist das jüngste Mitglied und versteckt sich hinter Berta, wenn zu viele Kinder kommen. Wenn er Mut fasst, ist er der neugierigste von allen!",                           skill:"Sieht dabei immer unwiderstehlich niedlich aus.",                                  e:"🐐" },
+  { id:9, name:"Olaf",  nick:"Der Wächter",       breed:"Burenziege",       age:"4 Jahre", character:"Stark, dominant, schützend", food:"Viel – ist schließlich der Beschützer", mother:null,     story:"Sturm stellt sich zwischen die Herde und alles Verdächtige – ob Fremde, Krähen oder unbekannte Eimer. Die Herde vertraut ihm blind.",                                          skill:"Offizieller Wächter der Herde. Hat jeden verdächtigen Eimer verjagt.",            e:"🐐" },
+];
 
-// ── FORMULARE INITIALISIEREN ──
-function initAdminForms() {
+// Ziegen laden (mit gespeicherten Änderungen aus localStorage)
+function getGoats() {
+  const stored = LS.g('sz_goats');
+  if (stored && Array.isArray(stored) && stored.length > 0) return stored;
+  // Beim ersten Aufruf: Standarddaten speichern
+  const init = DEFAULT_GOATS.map(g => ({ ...g, foto: ziegenbild(g.name), photos: [], votes: 0 }));
+  LS.s('sz_goats', init);
+  return init;
+}
+
+function saveGoats(goats) {
+  LS.s('sz_goats', goats);
+}
+
+// Einzelne Ziege per ID
+function getGoatById(id) {
+  return getGoats().find(g => g.id === parseInt(id)) || null;
+}
+
+// ══════════════════════════════════════════
+// QUIZ-FRAGEN
+// ══════════════════════════════════════════
+const DEFAULT_QUIZ = [
+  { q:"Welche Ziege frisst alles – auch Plastik und Papier?",       e:"🗑️", a:["Pico","Polli","Else","Olaf"],                              c:1 },
+  { q:"Wer ist das älteste Mitglied der Herde?",                    e:"🎂", a:["Charlotta","Tom","Pico","Else"],                           c:1 },
+  { q:"Wessen Tochter ist Paul?",                                   e:"👨‍👩‍👧", a:["Toms","Charlottas","Picos","Olafs"],                  c:2 },
+  { q:"Welche Ziege hat dreimal das Gehege verlassen?",             e:"🏃", a:["Polli","Olaf","Paul","Pünktchen"],                         c:2 },
+  { q:"Wer ist das jüngste Mitglied der Herde?",                   e:"🐣", a:["Pünktchen","Charlotta","Balou","Paul"],                    c:2 },
+  { q:"Was ist die besondere Form der Ziegen-Pupillen?",            e:"👁️", a:["Rund","Oval","Rechteckig","Dreieckig"],                    c:2 },
+  { q:"Wessen Tochter ist Balou?",                                  e:"👶", a:["Picos","Toms","Pauls","Charlottas"],                       c:3 },
+  { q:"Welche Ziege hat den Unterricht unterbrochen?",              e:"📢", a:["Pico","Balou","Charlotta","Olaf"],                         c:2 },
+  { q:"Wie hoch ist Pünktchens Hochsprung-Rekord?",                e:"🏆", a:["0,80 m","1,20 m","1,50 m","0,60 m"],                      c:1 },
+  { q:"Welche Ziege steht stundenlang auf dem Hügel und schaut in die Ferne?", e:"🤔", a:["Tom","Else","Polli","Olaf"],                   c:1 },
+];
+
+function getQuiz() {
+  const stored = LS.g('sz_quiz');
+  return (stored && Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_QUIZ;
+}
+
+function saveQuiz(q) { LS.s('sz_quiz', q); }
+
+// ══════════════════════════════════════════
+// MEMORY CONFIG
+// ══════════════════════════════════════════
+function getMemConfig() {
+  return LS.g('sz_memconfig') || { pairs: 6, mode: 'photo-emoji' };
+}
+function saveMemConfig(cfg) { LS.s('sz_memconfig', cfg); }
+
+// ══════════════════════════════════════════
+// RANGLISTE
+// ══════════════════════════════════════════
+function getScores() { return LS.g('sz_scores') || []; }
+
+function saveScore(username, moves, pairs) {
+  let scores = getScores();
+  scores.push({ username, moves, pairs, date: new Date().toLocaleDateString('de') });
+  scores.sort((a, b) => a.moves - b.moves || (b.pairs - a.pairs));
+  LS.s('sz_scores', scores.slice(0, 50));
+}
+
+function clearScores() { LS.s('sz_scores', []); }
+
+// ══════════════════════════════════════════
+// ABSTIMMUNG
+// ══════════════════════════════════════════
+// Wir nutzen einen einfachen Browser-Fingerprint statt Login
+function getVoterKey() {
+  let key = LS.g('sz_voter_key');
+  if (!key) {
+    key = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    LS.s('sz_voter_key', key);
+  }
+  return key;
+}
+
+function getVotedId()   { return LS.g('sz_voted_' + getVoterKey()); }
+function setVotedId(id) { LS.s('sz_voted_' + getVoterKey(), id); }
+
+function resetAllVotes() {
   const goats = getGoats();
-  const cfg   = getMemConfig();
-
-  // Mutter-Select füllen
-  const motherSel = document.getElementById('a-mother');
-  motherSel.innerHTML = '<option value="">— Keine —</option>' +
-    goats.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-
-  // Löschen-Select füllen
-  document.getElementById('del-sel').innerHTML =
-    goats.map(g => `<option value="${g.id}">${g.name} – ${g.nick}</option>`).join('');
-
-  // Memory-Paare
-  document.getElementById('mem-pairs').value = cfg.pairs;
-}
-
-// ── ZIEGE HINZUFÜGEN ──
-function addGoat() {
-  const name = document.getElementById('a-name').value.trim();
-  if (!name) { showMsg('add-msg', 'Name fehlt!', 'err'); return; }
-
-  const goats = getGoats();
-  const newId = Math.max(...goats.map(g => g.id), 0) + 1;
-
-  goats.push({
-    id:        newId,
-    name,
-    nick:      document.getElementById('a-nick').value.trim()  || name,
-    breed:     document.getElementById('a-breed').value.trim() || 'Hausziege',
-    age:       document.getElementById('a-age').value.trim()   || '?',
-    character: document.getElementById('a-char').value.trim()  || '—',
-    food:      document.getElementById('a-food').value.trim()  || '—',
-    mother:    document.getElementById('a-mother').value       || null,
-    story:     document.getElementById('a-story').value.trim() || '—',
-    skill:     document.getElementById('a-skill').value.trim() || '—',
-    photos: [], votes: 0, e: '🐐'
-  });
-
+  goats.forEach(g => g.votes = 0);
   saveGoats(goats);
-  showMsg('add-msg', `✓ ${name} wurde hinzugefügt!`, 'ok');
-  ['a-name','a-nick','a-breed','a-age','a-char','a-food','a-story','a-skill'].forEach(id => {
-    document.getElementById(id).value = '';
+  // Alle Vote-Keys löschen
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('sz_voted_'))
+    .forEach(k => localStorage.removeItem(k));
+}
+
+// ══════════════════════════════════════════
+// DARK MODE
+// ══════════════════════════════════════════
+function applyDark() {
+  const dark = LS.g('sz_dark') || false;
+  document.documentElement.toggleAttribute('data-dark', dark);
+  const tog = document.getElementById('dark-tog');
+  if (tog) tog.checked = dark;
+}
+
+function toggleDark() {
+  const dark = document.getElementById('dark-tog').checked;
+  LS.s('sz_dark', dark);
+  applyDark();
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION — aktiven Tab markieren
+// ══════════════════════════════════════════
+function markActiveNav(pageId) {
+  document.querySelectorAll('.nav-tab[data-page]').forEach(t => {
+    t.classList.toggle('active', t.dataset.page === pageId);
   });
-  setTimeout(initAdminForms, 600);
+  document.querySelectorAll('.bottom-nav-item[data-page]').forEach(t => {
+    t.classList.toggle('active', t.dataset.page === pageId);
+  });
 }
 
-// ── ZIEGE ENTFERNEN ──
-function removeGoat() {
-  const id = parseInt(document.getElementById('del-sel').value);
-  const goats = getGoats();
-  const g = goats.find(g => g.id === id);
-  if (!g) return;
-  if (!confirm(`"${g.name}" wirklich entfernen?`)) return;
-  saveGoats(goats.filter(g => g.id !== id));
-  initAdminForms();
+// ══════════════════════════════════════════
+// FOTO-KARUSSEL (wiederverwendbar)
+// ══════════════════════════════════════════
+let _phIdx = 0;
+let _phGoat = null;
+
+function initCarousel(goat, containerId) {
+  _phGoat = goat;
+  _phIdx  = 0;
+  renderCarousel(containerId);
 }
 
-// ── MEMORY ──
-function saveMemCfg() {
-  const pairs = parseInt(document.getElementById('mem-pairs').value);
-  saveMemConfig({ pairs, mode: 'photo-emoji' });
-  showMsg('mem-msg', 'Gespeichert!', 'ok');
-  setTimeout(() => { document.getElementById('mem-msg').innerHTML = ''; }, 2000);
+function renderCarousel(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const photos = _phGoat.photos || [];
+  if (!photos.length) {
+    container.innerHTML = `<div class="photo-slide" style="font-size:7rem;display:flex;align-items:center;justify-content:center;height:100%">${_phGoat.e}</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="photo-track" id="ph-track" style="transform:translateX(-${_phIdx * 100}%)">
+      ${photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${_phGoat.name}"></div>`).join('')}
+    </div>
+    ${photos.length > 1 ? `
+      <button class="ph-nav l" onclick="carouselNav(-1)"${_phIdx === 0 ? ' disabled' : ''}>‹</button>
+      <button class="ph-nav r" onclick="carouselNav(1)"${_phIdx >= photos.length - 1 ? ' disabled' : ''}>›</button>
+      <div class="ph-dots">${photos.map((_, i) => `<button class="ph-dot${i === _phIdx ? ' on' : ''}" onclick="carouselGo(${i})"></button>`).join('')}</div>
+    ` : ''}`;
 }
 
-// ── QUIZ-EDITOR ──
-function renderQuizEditor() {
-  const qs = getQuiz();
-  document.getElementById('quiz-editor').innerHTML = qs.map((q, qi) => `
-    <div class="qe-item">
-      <div class="qe-header">
-        <span class="qe-question-text">${qi + 1}. ${escHtml(q.q)}</span>
-        <button class="qe-delete" onclick="deleteQuizQ(${qi})">✕</button>
-      </div>
-      <div class="qe-body">
-        <div class="qe-field">
-          <label>Frage</label>
-          <input value="${escHtml(q.q)}" onchange="updateQuizQ(${qi},'q',this.value)">
-        </div>
-        <div class="qe-field">
-          <label>Emoji</label>
-          <input value="${q.e}" onchange="updateQuizQ(${qi},'e',this.value)" style="width:80px">
-        </div>
-        <div class="qe-field">
-          <label>Antworten (Kreis = richtige Antwort)</label>
-          <div class="qe-answers-grid">
-            ${q.a.map((a, ai) => `
-              <div class="qe-answer-wrap">
-                <span class="qe-answer-label">${String.fromCharCode(65 + ai)}:</span>
-                <input value="${escHtml(a)}" onchange="updateQuizQ(${qi},'a${ai}',this.value)" style="flex:1">
-                <input type="radio" name="correct_${qi}" value="${ai}"
-                       ${q.c === ai ? 'checked' : ''}
-                       onchange="updateQuizQ(${qi},'c',${ai})" title="Richtige Antwort">
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>
-    </div>`).join('');
+function carouselNav(dir) {
+  const photos = _phGoat.photos || [];
+  _phIdx = Math.max(0, Math.min(photos.length - 1, _phIdx + dir));
+  const track = document.getElementById('ph-track');
+  if (track) track.style.transform = `translateX(-${_phIdx * 100}%)`;
 }
 
-function updateQuizQ(qi, key, val) {
-  const qs = getQuiz();
-  if (key === 'q') qs[qi].q = val;
-  else if (key === 'e') qs[qi].e = val;
-  else if (key.startsWith('a')) qs[qi].a[parseInt(key[1])] = val;
-  else if (key === 'c') qs[qi].c = parseInt(val);
-  saveQuiz(qs);
+function carouselGo(i) {
+  _phIdx = i;
+  const track = document.getElementById('ph-track');
+  if (track) track.style.transform = `translateX(-${_phIdx * 100}%)`;
 }
 
-function deleteQuizQ(qi) {
-  if (!confirm('Frage löschen?')) return;
-  const qs = getQuiz();
-  qs.splice(qi, 1);
-  saveQuiz(qs);
-  renderQuizEditor();
+// ══════════════════════════════════════════
+// HILFSFUNKTIONEN
+// ══════════════════════════════════════════
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 }
 
-function addQuizQ() {
-  const qs = getQuiz();
-  qs.push({ q:"Neue Frage?", e:"🐐", a:["Antwort A","Antwort B","Antwort C","Antwort D"], c:0 });
-  saveQuiz(qs);
-  renderQuizEditor();
-  setTimeout(() => {
-    const items = document.querySelectorAll('.qe-item');
-    if (items.length) items[items.length - 1].scrollIntoView({ behavior:'smooth' });
-  }, 100);
+function goatPhotoOrEmoji(g, size='small') {
+  // 1. Hochgeladene Fotos haben Vorrang
+  if (g.photos && g.photos.length) {
+    return `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`;
+  }
+  // 2. Bild aus dem bilder/-Ordner (z.B. bilder/Olaf.jpg)
+  if (g.foto) {
+    return `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span style="display:none;font-size:${size === 'large' ? '5rem' : '2.2rem'}">${g.e}</span>`;
+  }
+  // 3. Fallback: Emoji
+  const fs = size === 'large' ? '5rem' : '2.2rem';
+  return `<span style="font-size:${fs}">${g.e}</span>`;
 }
 
-// ── WEITERE AKTIONEN ──
-function doResetVotes() {
-  if (!confirm('Alle Stimmen für "Ziege des Monats" zurücksetzen?')) return;
-  resetAllVotes();
-  alert('Stimmen wurden zurückgesetzt.');
+// Gibt Benutzernamen zurück (für Rangliste) — ohne Login einfach Gerätename
+function getDisplayName() {
+  let name = LS.g('sz_display_name');
+  if (!name) {
+    // Zufälligen Tiernamen vergeben
+    const animals = ['Ziegenfan','Herdenkind','Meckerer','Hoppelfreund','BertaFan','OlafFan','HerdeHeld','ZiegenProfi'];
+    name = animals[Math.floor(Math.random() * animals.length)] + '_' + Math.floor(Math.random() * 99 + 1);
+    LS.s('sz_display_name', name);
+  }
+  return name;
 }
 
-function doResetScores() {
-  if (!confirm('Rangliste wirklich leeren?')) return;
-  clearScores();
-  alert('Rangliste geleert.');
-}
-
-// ── HILFSFUNKTIONEN ──
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
-  el.innerHTML = `<div class="msg ${type}">${text}</div>`;
-  setTimeout(() => el.innerHTML = '', 3000);
-}
-</script>
-</body>
-</html>
+function setDisplayName(name) { LS.s('sz_display_name', name); }
