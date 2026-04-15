@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Ziege des Monats</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">⭐ Ziege des Monats</div>
+  <div id="gotm-body"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script>
+buildNav('monat');
+
+function render() {
+  const goats  = getGoats();
+  const sorted = [...goats].sort((a, b) => b.votes - a.votes);
+  const w      = sorted[0];
+  const total  = goats.reduce((s, g) => s + g.votes, 0);
+  const votedId = getVotedId();
+
+  const wph = (w.photos && w.photos.length)
+    ? `<img src="${w.photos[0]}" alt="${w.name}">`
+    : w.foto
+      ? `<img src="${w.foto}" alt="${w.name}" onerror="this.style.display='none'">`
+      : w.e;
+
+  document.getElementById('gotm-body').innerHTML = `
+    <div class="gotm-card">
+      <div class="gotm-photo">${wph}</div>
+      <div>
+        <div class="gotm-label">Ziege des Monats</div>
+        <div class="gotm-name">${w.name}</div>
+        <div class="gotm-sub">${w.nick} · ${w.character}</div>
+        <div class="gotm-votes">♥ ${w.votes} Stimmen${total > 0 ? ` · ${Math.round(w.votes / total * 100)}%` : ''}</div>
+      </div>
+    </div>
+
+    ${total === 0
+      ? `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:16px">
+           Noch keine Stimmen – gehe zu einer Ziege und stimme ab!
+         </p>`
+      : ''}
+
+    <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--clr-text-faint);margin-bottom:12px">
+      Abstimmungsergebnis
+    </div>
+
+    <div id="vote-list">
+      ${sorted.map(g => {
+        const ph = (g.photos && g.photos.length)
+          ? `<img src="${g.photos[0]}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0">`
+          : g.foto
+            ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
+            : `<span style="font-size:18px">${g.e}</span>`;
+        const pct = total > 0 ? Math.round(g.votes / total * 100) : 0;
+        return `<div class="vote-row">
+          ${ph}
+          <a href="ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${g.name}</a>
+          <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%"></div></div>
+          <span class="vote-row-count">♥ ${g.votes}</span>
+          ${votedId === null
+            ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Abstimmen</button>`
+            : votedId === g.id
+              ? `<span style="font-size:12px;color:var(--clr-green);font-weight:600">✓ Deine Wahl</span>`
+              : `<span style="font-size:12px;color:var(--clr-text-faint)">—</span>`
+          }
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${isAdminLoggedIn() ? `
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border-soft)">
+        <button class="btn-danger" onclick="doResetVotes()">Alle Stimmen zurücksetzen</button>
+      </div>` : ''}`;
+}
+
+function doVote(id) {
+  if (getVotedId() !== null) return;
+  const goats = getGoats();
+  const g = goats.find(g => g.id === id);
+  if (!g) return;
+  g.votes++;
+  setVotedId(id);
+  saveGoats(goats);
+  render();
+}
+
+function doResetVotes() {
+  if (!confirm('Alle Stimmen zurücksetzen?')) return;
+  resetAllVotes();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

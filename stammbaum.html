@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Rangliste</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">🏆 Rangliste – Memory</div>
+  <p class="section-sub">Die besten Ergebnisse aller Spieler. Wenigste Züge gewinnt!</p>
+  <div id="lb-body"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script>
+buildNav('rangliste');
+
+function render() {
+  const scores = getScores();
+  const myName = getDisplayName();
+  const lb = document.getElementById('lb-body');
+
+  if (!scores.length) {
+    lb.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">🃏</span>
+        <div class="empty-state-text">Noch keine Einträge</div>
+        <div class="empty-state-sub">Spiele Memory und komm in die Rangliste!</div>
+        <a href="memory.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Memory spielen</a>
+      </div>`;
+    return;
+  }
+
+  const medals = ['🥇','🥈','🥉'];
+
+  lb.innerHTML = `
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${scores.map((s, i) => {
+          const isYou = s.username === myName;
+          return `<tr class="${isYou ? 'lb-you' : ''}">
+            <td class="lb-rank">${i + 1}</td>
+            <td class="lb-medal">${medals[i] || ''}</td>
+            <td>${s.username}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
+            <td class="lb-score">${s.moves}</td>
+            <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs} Paare</td>
+            <td class="lb-time">${s.date}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+
+    ${isAdminLoggedIn() ? `
+      <div style="margin-top:16px">
+        <button class="btn-danger" onclick="doReset()">Rangliste leeren</button>
+      </div>` : ''}`;
+}
+
+function doReset() {
+  if (!confirm('Rangliste wirklich leeren?')) return;
+  clearScores();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Quiz</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">🧠 Ziegen-Quiz</div>
+  <div class="quiz-wrap" id="quiz-body"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script>
+buildNav('quiz');
+
+let quizQuestions = getQuiz();
+let quizState = null;
+
+function startQuiz() {
+  const qs = [...quizQuestions]
+    .sort(() => Math.random() - .5)
+    .slice(0, Math.min(7, quizQuestions.length));
+  quizState = { idx: 0, score: 0, questions: qs, answered: false };
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const { idx, score, questions } = quizState;
+  const qb = document.getElementById('quiz-body');
+
+  if (idx >= questions.length) {
+    const pct = Math.round(score / questions.length * 100);
+    const em  = pct >= 80 ? '🏆' : pct >= 50 ? '😊' : '🐐';
+    const msg = pct >= 80 ? 'Ziegenexperte!' : pct >= 50 ? 'Gut gemacht!' : 'Übe weiter!';
+    qb.innerHTML = `
+      <div class="quiz-score">
+        <span class="quiz-score-emoji">${em}</span>
+        <div class="quiz-score-number">${score} / ${questions.length}</div>
+        <div class="quiz-score-msg">${msg}</div>
+        <button class="btn-primary" style="margin:20px auto 0;display:block" onclick="startQuiz()">
+          Nochmal spielen
+        </button>
+      </div>`;
+    return;
+  }
+
+  const q = questions[idx];
+  qb.innerHTML = `
+    <div class="quiz-progress">
+      <div class="quiz-progress-bar" style="width:${idx / questions.length * 100}%"></div>
+    </div>
+    <div class="quiz-meta">Frage ${idx + 1} von ${questions.length}</div>
+    <span class="quiz-emoji">${q.e}</span>
+    <div class="quiz-question">${q.q}</div>
+    <div class="quiz-options">
+      ${q.a.map((a, i) => `
+        <button class="quiz-option" id="qo${i}" onclick="answerQ(${i})">${a}</button>
+      `).join('')}
+    </div>
+    <div id="q-fb"></div>`;
+}
+
+function answerQ(ch) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  const q  = quizState.questions[quizState.idx];
+  const ok = q.c === ch;
+  if (ok) quizState.score++;
+
+  document.querySelectorAll('.quiz-option').forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.c)       b.classList.add('correct');
+    else if (i === ch && !ok) b.classList.add('wrong');
+  });
+
+  document.getElementById('q-fb').innerHTML = `
+    <div class="quiz-feedback ${ok ? 'correct' : 'wrong'}">
+      ${ok ? '✓ Richtig!' : `✗ Falsch. Richtig war: <strong>${q.a[q.c]}</strong>`}
+    </div>
+    <button class="btn-primary" style="margin-top:14px" onclick="nextQ()">
+      ${quizState.idx + 1 < quizState.questions.length ? 'Weiter →' : 'Ergebnis anzeigen'}
+    </button>`;
+}
+
+function nextQ() {
+  quizState.idx++;
+  quizState.answered = false;
+  renderQuiz();
+}
+
+startQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Fakten</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">💡 Wissenswertes über Ziegen</div>
+  <div class="facts-grid" id="facts-body"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script>
+buildNav('fakten');
+
+const FACTS = [
+  { i:"👁️", t:"360°-Blick",         p:"Ziegen haben rechteckige Pupillen — fast 360° Sicht, um Fressfeinde von überall zu sehen." },
+  { i:"🗣️", t:"Eigene Stimme",       p:"Jede Ziege hat ihren eigenen Stimmklang. Mutter und Kind erkennen sich am Blöken." },
+  { i:"🧠", t:"Superklug",           p:"Ziegen können komplizierte Schlösser öffnen und sich das über Jahre merken." },
+  { i:"🧭", t:"Gutes Gedächtnis",    p:"Ziegen erinnern sich jahrelang an andere Ziegen und an Menschen, die nett zu ihnen waren." },
+  { i:"🌿", t:"Wählerische Fresser", p:"Ziegen schnuppern erst und entscheiden dann — außer Olaf natürlich." },
+  { i:"😊", t:"Echte Gefühle",       p:"Ziegen können positive und negative Emotionen durch verschiedene Laute ausdrücken." },
+  { i:"🧗", t:"Kletterkünstler",     p:"Ziegen können fast senkrechte Felswände erklimmen. Ihre gespaltenen Hufe wirken wie Klettergriffe." },
+  { i:"🌍", t:"Uralt domestiziert",  p:"Ziegen gehören zu den ersten Tieren, die von Menschen gehalten wurden — vor über 10.000 Jahren." },
+  { i:"💬", t:"Dialekte",            p:"Ziegen passen ihren Blöklaut an die Gruppe an — sie entwickeln tatsächlich lokale Dialekte." },
+  { i:"🎵", t:"Musik mögen",         p:"Forschungen zeigen: Ziegen reagieren auf klassische Musik deutlich ruhiger." },
+];
+
+document.getElementById('facts-body').innerHTML = FACTS.map(f => `
+  <div class="fact-card">
+    <span class="fact-icon">${f.i}</span>
+    <div class="fact-title">${f.t}</div>
+    <div class="fact-text">${f.p}</div>
+  </div>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Memory</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">🃏 Memory-Spiel</div>
+  <p class="section-sub">Finde alle Ziegen-Paare! Dein bestes Ergebnis kommt in die Rangliste.</p>
+
+  <!-- Spieler-Name -->
+  <div id="name-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+    <span style="font-size:13px;color:var(--clr-text-muted)">Spieler:</span>
+    <span id="name-display" style="font-size:13px;font-weight:600;color:var(--clr-text)"></span>
+    <button class="btn-secondary" style="font-size:12px;padding:4px 10px" onclick="changeName()">✏️ Ändern</button>
+  </div>
+
+  <div class="memory-controls" id="mem-controls"></div>
+  <div class="memory-board"    id="mem-board"></div>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script>
+buildNav('memory');
+
+const goats = getGoats();
+let memState = null;
+let cfg = getMemConfig();
+
+// Spieler-Name anzeigen
+function showName() {
+  document.getElementById('name-display').textContent = getDisplayName();
+}
+
+function changeName() {
+  const n = prompt('Dein Name für die Rangliste:', getDisplayName());
+  if (n && n.trim().length >= 2) {
+    setDisplayName(n.trim().replace(/[^a-zA-Z0-9äöüÄÖÜß_\- ]/g, '').slice(0, 20));
+    showName();
+  }
+}
+
+function startMemory() {
+  cfg = getMemConfig();
+  const pairs = Math.min(cfg.pairs, goats.length);
+
+  document.getElementById('mem-controls').innerHTML = `
+    <span class="memory-stat">Paare: <strong>${pairs}</strong></span>
+    <span class="memory-stat" id="mem-moves">Züge: <strong>0</strong></span>
+    <span class="memory-stat" id="mem-found">Gefunden: <strong>0</strong>/${pairs}</span>
+    <button class="btn-primary" onclick="startMemory()">↺ Neu starten</button>`;
+
+  initMemory(pairs);
+}
+
+function initMemory(pairs) {
+  const selectedGoats = [...goats].sort(() => Math.random() - .5).slice(0, pairs);
+  let cards = [];
+  selectedGoats.forEach((g, i) => {
+    cards.push({ id: i * 2,     goatId: g.id, pairId: i });
+    cards.push({ id: i * 2 + 1, goatId: g.id, pairId: i });
+  });
+  cards = cards.sort(() => Math.random() - .5);
+  memState = { cards, flipped: [], matched: [], moves: 0, locked: false, pairs };
+  updateMemStats();
+  renderMemBoard();
+}
+
+function renderMemBoard() {
+  const board = document.getElementById('mem-board');
+  const cols  = memState.pairs <= 6 ? 4 : 6;
+  board.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+
+  board.innerHTML = memState.cards.map((c, idx) => {
+    const g = goats.find(g => g.id === c.goatId);
+    const front = (g.photos && g.photos.length)
+      ? `<img src="${g.photos[0]}" alt="${g.name}"><div class="card-label">${g.name}</div>`
+      : g.foto
+        ? `<img src="${g.foto}" alt="${g.name}" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span class="card-emoji" style="display:none">${g.e}</span><div class="card-label">${g.name}</div>`
+        : `<span class="card-emoji">${g.e}</span><div class="card-label">${g.name}</div>`;
+    return `
+      <div class="memory-card-wrap" onclick="flipCard(${idx})">
+        <div class="memory-card" id="mc${idx}">
+          <div class="card-face card-back">🐐</div>
+          <div class="card-face card-front">${front}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function flipCard(idx) {
+  const s = memState;
+  if (s.locked) return;
+  if (s.flipped.includes(idx)) return;
+  if (s.matched.includes(s.cards[idx].pairId)) return;
+
+  s.flipped.push(idx);
+  document.getElementById('mc' + idx).classList.add('flipped');
+
+  if (s.flipped.length === 2) {
+    s.moves++; s.locked = true;
+    updateMemStats();
+    const [a, b] = s.flipped;
+
+    if (s.cards[a].pairId === s.cards[b].pairId) {
+      s.matched.push(s.cards[a].pairId);
+      document.getElementById('mc' + a).classList.add('matched');
+      document.getElementById('mc' + b).classList.add('matched');
+      s.flipped = []; s.locked = false;
+      updateMemStats();
+      if (s.matched.length === s.pairs) setTimeout(gameWon, 400);
+    } else {
+      setTimeout(() => {
+        document.getElementById('mc' + a).classList.remove('flipped');
+        document.getElementById('mc' + b).classList.remove('flipped');
+        s.flipped = []; s.locked = false;
+      }, 900);
+    }
+  }
+}
+
+function updateMemStats() {
+  const el  = document.getElementById('mem-moves');
+  const el2 = document.getElementById('mem-found');
+  if (el)  el.innerHTML  = `Züge: <strong>${memState.moves}</strong>`;
+  if (el2) el2.innerHTML = `Gefunden: <strong>${memState.matched.length}</strong>/${memState.pairs}`;
+}
+
+function gameWon() {
+  const name = getDisplayName();
+  saveScore(name, memState.moves, memState.pairs);
+
+  document.getElementById('mem-board').innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:40px 16px">
+      <div style="font-size:60px;margin-bottom:14px">🏆</div>
+      <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--clr-text);margin-bottom:8px">
+        Gewonnen, ${name}!
+      </div>
+      <div style="font-size:15px;color:var(--clr-text-muted);margin-bottom:4px">
+        ${memState.moves} Züge · ${memState.pairs} Paare
+      </div>
+      <div style="font-size:13px;color:var(--clr-blue);font-weight:500;margin-bottom:22px">
+        Ergebnis wurde in der Rangliste gespeichert!
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-primary" onclick="startMemory()">Nochmal spielen</button>
+        <a class="btn-secondary" href="rangliste.html">Rangliste ansehen</a>
+      </div>
+    </div>`;
+}
+
+showName();
+startMemory();
+</script>
+</body>
+</html>
