@@ -43,8 +43,19 @@
 <script>
 buildNav('gallery');
 
-let goats = getGoats();
-let filtered = [...goats];
+let goats = [];
+let filtered = [];
+
+async function initPage() {
+  try {
+    goats = await getGoatsFromApi();
+  } catch (e) {
+    console.error('API-Laden fehlgeschlagen, nutze lokalen Fallback.', e);
+    goats = getGoats();
+  }
+  filtered = [...goats];
+  renderGallery();
+}
 
 function onSearch() {
   const q = document.getElementById('srch').value.toLowerCase().trim();
@@ -99,7 +110,7 @@ function renderGallery() {
   }).join('');
 }
 
-renderGallery();
+initPage();
 </script>
 </body>
 </html>

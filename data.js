@@ -44,14 +44,43 @@ function adminLogout() {
 // BILDER-PFAD
 // ══════════════════════════════════════════
 // Alle Ziegenbilder liegen im Ordner "bilder/"
-// Dateiname = Name der Ziege + .jpeg  (z.B. bilder/Olaf.jpeg)
+// Dateiname = Name der Ziege + .jpg  (z.B. bilder/Olaf.jpg)
 // Falls ein Bild nicht gefunden wird, zeigt die App automatisch das Emoji.
 
 const BILDER_ORDNER = '/OhmoorZiegen/bilder/';
-const BILDER_ENDUNG = '.jpeg'; // Falls eure Bilder .png sind, hier ändern
+const BILDER_ENDUNG = '.jpeg'; // Live-Bilder liegen aktuell als .jpeg vor
 
 function ziegenbild(name) {
   return BILDER_ORDNER + name + BILDER_ENDUNG;
+}
+
+
+const API_BASE = 'https://ziegen-api.torstenbull.workers.dev';
+
+function mapApiGoat(row) {
+  return {
+    id: row.id,
+    name: row.name || '',
+    nick: row.nickname || '',
+    breed: row.breed || '',
+    age: row.age || '',
+    character: row.character || '',
+    food: row.favorite_food || '',
+    mother: row.mother_name || null,
+    story: row.story || '',
+    skill: row.special_skill || '',
+    foto: row.main_image_url || ziegenbild(row.name || ''),
+    photos: Array.isArray(row.photos) ? row.photos : [],
+    votes: typeof row.votes === 'number' ? row.votes : 0,
+    e: '🐐'
+  };
+}
+
+async function getGoatsFromApi() {
+  const res = await fetch(`${API_BASE}/api/goats`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const rows = await res.json();
+  return rows.map(mapApiGoat);
 }
 
 // ══════════════════════════════════════════
@@ -247,7 +276,7 @@ function goatPhotoOrEmoji(g, size='small') {
   if (g.photos && g.photos.length) {
     return `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`;
   }
-  // 2. Bild aus dem bilder/-Ordner (z.B. bilder/Olaf.jpeg)
+  // 2. Bild aus dem bilder/-Ordner (z.B. bilder/Olaf.jpg)
   if (g.foto) {
     return `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span style="display:none;font-size:${size === 'large' ? '5rem' : '2.2rem'}">${g.e}</span>`;
   }
