@@ -182,6 +182,21 @@ function setVotedId(id) {
   LS.s('sz_voted_id', id);
 }
 
+async function fetchCurrentVote() {
+  const res = await fetch(`${API_BASE}/api/votes/current`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_token: getVoterKey() })
+  });
+
+  if (!res.ok) throw new Error(`Vote current API ${res.status}`);
+  const data = await res.json();
+  const id = data?.goat_id ?? null;
+  if (id === null) LS.del('sz_voted_id');
+  else setVotedId(id);
+  return id;
+}
+
 async function fetchVoteResults() {
   const res = await fetch(`${API_BASE}/api/votes/results`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Vote API ${res.status}`);

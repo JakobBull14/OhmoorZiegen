@@ -70,6 +70,12 @@ function render() {
          </p>`
       : ''}
 
+    <p style="font-size:13px;color:var(--clr-text-muted);margin:0 0 16px">
+      ${votedId === null
+        ? 'Du kannst abstimmen und deine Wahl später auf diesem Gerät wieder ändern.'
+        : 'Du hast bereits abgestimmt und kannst deine Stimme jederzeit auf diesem Gerät ändern.'}
+    </p>
+
     <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--clr-text-faint);margin-bottom:12px">
       Abstimmungsergebnis · insgesamt ${total} Stimmen
     </div>
@@ -85,11 +91,9 @@ function render() {
           <a href="/OhmoorZiegen/ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${g.name}</a>
           <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%"></div></div>
           <span class="vote-row-count">♥ ${g.votes}</span>
-          ${votedId === null
-            ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Abstimmen</button>`
-            : Number(votedId) === Number(g.id)
-              ? `<span style="font-size:12px;color:var(--clr-green);font-weight:600">✓ Deine Wahl</span>`
-              : `<span style="font-size:12px;color:var(--clr-text-faint)">—</span>`
+          ${Number(votedId) === Number(g.id)
+            ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Deine Wahl</button>`
+            : `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">${votedId === null ? 'Abstimmen' : 'Umvoten'}</button>`
           }
         </div>`;
       }).join('')}
@@ -97,9 +101,9 @@ function render() {
 }
 
 async function doVote(id) {
-  if (getVotedId() !== null) return;
   try {
     await submitVote(id);
+    await fetchCurrentVote();
     voteResults = await fetchVoteResults();
     render();
   } catch (err) {
@@ -112,6 +116,12 @@ async function initPage() {
     goats = await getGoatsFromApi();
   } catch (err) {
     goats = getGoats();
+  }
+
+  try {
+    await fetchCurrentVote();
+  } catch (err) {
+    // lokaler Fallback bleibt erhalten
   }
 
   try {
