@@ -23,18 +23,33 @@ buildNav('gallery');
 // ID aus URL lesen
 const params = new URLSearchParams(location.search);
 const goatId = parseInt(params.get('id'));
-const goats  = getGoats();
-let goat     = goats.find(g => g.id === goatId);
-let goatIdx  = goats.findIndex(g => g.id === goatId);
+let goats = [];
+let goat = null;
+let goatIdx = -1;
 
-if (!goat) {
-  document.getElementById('page-body').innerHTML = `
-    <div class="empty-state">
-      <span class="empty-state-icon">🤷</span>
-      <div class="empty-state-text">Ziege nicht gefunden</div>
-      <a href="/OhmoorZiegen/index.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Zur Galerie</a>
-    </div>`;
-} else {
+initPage();
+
+async function initPage() {
+  try {
+    goats = await getGoatsFromApi();
+  } catch (e) {
+    console.error('API-Laden fehlgeschlagen, nutze lokalen Fallback.', e);
+    goats = getGoats();
+  }
+
+  goat = goats.find(g => g.id === goatId);
+  goatIdx = goats.findIndex(g => g.id === goatId);
+
+  if (!goat) {
+    document.getElementById('page-body').innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">🤷</span>
+        <div class="empty-state-text">Ziege nicht gefunden</div>
+        <a href="/OhmoorZiegen/index.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Zur Galerie</a>
+      </div>`;
+    return;
+  }
+
   document.title = `Schulziegen – ${goat.name}`;
   renderPage();
 }
