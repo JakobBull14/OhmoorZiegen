@@ -21,12 +21,24 @@
 <script>
 buildNav('rangliste');
 
+let leaderboard = [];
+
+async function loadLeaderboard() {
+  const lb = document.getElementById('lb-body');
+  lb.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Rangliste ...</p>`;
+  try {
+    leaderboard = await fetchLeaderboard();
+    render();
+  } catch (err) {
+    lb.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
+  }
+}
+
 function render() {
-  const scores = getScores();
   const myName = getDisplayName();
   const lb = document.getElementById('lb-body');
 
-  if (!scores.length) {
+  if (!leaderboard.length) {
     lb.innerHTML = `
       <div class="empty-state">
         <span class="empty-state-icon">🃏</span>
@@ -43,37 +55,52 @@ function render() {
     <table class="leaderboard-table">
       <thead>
         <tr>
-          <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>
+          <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>${isAdminLoggedIn() ? '<th></th>' : ''}
         </tr>
       </thead>
       <tbody>
-        ${scores.map((s, i) => {
-          const isYou = s.username === myName;
+        ${leaderboard.map((s, i) => {
+          const isYou = s.player_name === myName;
           return `<tr class="${isYou ? 'lb-you' : ''}">
             <td class="lb-rank">${i + 1}</td>
             <td class="lb-medal">${medals[i] || ''}</td>
-            <td>${s.username}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
-            <td class="lb-score">${s.moves}</td>
-            <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs} Paare</td>
-            <td class="lb-time">${s.date}</td>
+            <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
+            <td class="lb-score">${s.score}</td>
+            <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs ?? '-'} Paare</td>
+            <td class="lb-time">${escHtml(s.date_label || s.created_at || '')}</td>
+            ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteEntry(${s.id})">Löschen</button></td>` : ''}
           </tr>`;
         }).join('')}
       </tbody>
     </table>
 
     ${isAdminLoggedIn() ? `
-      <div style="margin-top:16px">
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn-danger" onclick="doReset()">Rangliste leeren</button>
       </div>` : ''}`;
 }
 
-function doReset() {
-  if (!confirm('Rangliste wirklich leeren?')) return;
-  clearScores();
-  render();
+async function deleteEntry(id) {
+  if (!confirm('Diesen Ranglisten-Eintrag wirklich löschen?')) return;
+  try {
+    await deleteLeaderboardEntry(id);
+    await loadLeaderboard();
+  } catch (err) {
+    alert(err.message || 'Löschen fehlgeschlagen.');
+  }
 }
 
-render();
+async function doReset() {
+  if (!confirm('Rangliste wirklich leeren?')) return;
+  try {
+    await clearScores();
+    await loadLeaderboard();
+  } catch (err) {
+    alert(err.message || 'Zurücksetzen fehlgeschlagen.');
+  }
+}
+
+loadLeaderboard();
 </script>
 </body>
 </html>

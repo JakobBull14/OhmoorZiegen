@@ -151,16 +151,50 @@ function saveMemConfig(cfg) { LS.s('sz_memconfig', cfg); }
 // ══════════════════════════════════════════
 // RANGLISTE
 // ══════════════════════════════════════════
-function getScores() { return LS.g('sz_scores') || []; }
-
-function saveScore(username, moves, pairs) {
-  let scores = getScores();
-  scores.push({ username, moves, pairs, date: new Date().toLocaleDateString('de') });
-  scores.sort((a, b) => a.moves - b.moves || (b.pairs - a.pairs));
-  LS.s('sz_scores', scores.slice(0, 50));
+function validatePlayerName(name) {
+  const cleaned = String(name || '').trim().replace(/\s+/g, ' ');
+  if (cleaned.length < 3) return { ok: false, error: 'Bitte mindestens 3 Zeichen eingeben.' };
+  if (cleaned.length > 16) return { ok: false, error: 'Bitte höchstens 16 Zeichen verwenden.' };
+  if (!/^[a-zA-Z0-9äöüÄÖÜß _-]+$/.test(cleaned)) return { ok: false, error: 'Erlaubt sind Buchstaben, Zahlen, Leerzeichen, - und _.' };
+  if (!/[a-zA-ZäöüÄÖÜß]/.test(cleaned)) return { ok: false, error: 'Der Name muss mindestens einen Buchstaben enthalten.' };
+  return { ok: true, name: cleaned };
 }
 
-function clearScores() { LS.s('sz_scores', []); }
+async function fetchLeaderboard() {
+  const res = await fetch(`${API_BASE}/api/leaderboard`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Leaderboard API ${res.status}`);
+  return await res.json();
+}
+
+async function saveScore(username, moves, pairs) {
+  const valid = validatePlayerName(username);
+  if (!valid.ok) throw new Error(valid.error);
+
+  const res = await fetch(`${API_BASE}/api/leaderboard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ player_name: valid.name, score: moves, pairs, device_token: getVoterKey() })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Leaderboard API ${res.status}`);
+  return data;
+}
+
+async function clearScores() {
+  const res = await fetch(`${API_BASE}/api/admin/leaderboard/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`Reset API ${res.status}`);
+}
+
+async function deleteLeaderboardEntry(id) {
+  const res = await fetch(`${API_BASE}/api/admin/leaderboard/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Delete API ${res.status}`);
+}
 
 // ══════════════════════════════════════════
 // ABSTIMMUNG

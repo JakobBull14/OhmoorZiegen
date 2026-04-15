@@ -41,10 +41,14 @@ function showName() {
 
 function changeName() {
   const n = prompt('Dein Name für die Rangliste:', getDisplayName());
-  if (n && n.trim().length >= 2) {
-    setDisplayName(n.trim().replace(/[^a-zA-Z0-9äöüÄÖÜß_\- ]/g, '').slice(0, 20));
-    showName();
+  if (!n) return;
+  const valid = validatePlayerName(n);
+  if (!valid.ok) {
+    alert(valid.error);
+    return;
   }
+  setDisplayName(valid.name);
+  showName();
 }
 
 function startMemory() {
@@ -133,9 +137,16 @@ function updateMemStats() {
   if (el2) el2.innerHTML = `Gefunden: <strong>${memState.matched.length}</strong>/${memState.pairs}`;
 }
 
-function gameWon() {
+async function gameWon() {
   const name = getDisplayName();
-  saveScore(name, memState.moves, memState.pairs);
+  let saveMessage = 'Ergebnis wurde in der Rangliste gespeichert!';
+  let saveColor = 'var(--clr-blue)';
+  try {
+    await saveScore(name, memState.moves, memState.pairs);
+  } catch (err) {
+    saveMessage = 'Speichern in der Rangliste fehlgeschlagen.';
+    saveColor = 'var(--clr-text-muted)';
+  }
 
   document.getElementById('mem-board').innerHTML = `
     <div style="grid-column:1/-1;text-align:center;padding:40px 16px">
@@ -146,8 +157,8 @@ function gameWon() {
       <div style="font-size:15px;color:var(--clr-text-muted);margin-bottom:4px">
         ${memState.moves} Züge · ${memState.pairs} Paare
       </div>
-      <div style="font-size:13px;color:var(--clr-blue);font-weight:500;margin-bottom:22px">
-        Ergebnis wurde in der Rangliste gespeichert!
+      <div style="font-size:13px;color:${saveColor};font-weight:500;margin-bottom:22px">
+        ${saveMessage}
       </div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button class="btn-primary" onclick="startMemory()">Nochmal spielen</button>
