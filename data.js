@@ -44,11 +44,11 @@ function adminLogout() {
 // BILDER-PFAD
 // ══════════════════════════════════════════
 // Alle Ziegenbilder liegen im Ordner "bilder/"
-// Dateiname = Name der Ziege + .jpg  (z.B. bilder/Olaf.jpg)
+// Dateiname = Name der Ziege + .jpeg  (z.B. bilder/Olaf.jpeg)
 // Falls ein Bild nicht gefunden wird, zeigt die App automatisch das Emoji.
 
 const BILDER_ORDNER = '/OhmoorZiegen/bilder/';
-const BILDER_ENDUNG = '.jpg'; // Falls eure Bilder .png sind, hier ändern
+const BILDER_ENDUNG = '.jpeg'; // Falls eure Bilder .png sind, hier ändern
 
 function ziegenbild(name) {
   return BILDER_ORDNER + name + BILDER_ENDUNG;
@@ -247,7 +247,7 @@ function goatPhotoOrEmoji(g, size='small') {
   if (g.photos && g.photos.length) {
     return `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`;
   }
-  // 2. Bild aus dem bilder/-Ordner (z.B. bilder/Olaf.jpg)
+  // 2. Bild aus dem bilder/-Ordner (z.B. bilder/Olaf.jpeg)
   if (g.foto) {
     return `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span style="display:none;font-size:${size === 'large' ? '5rem' : '2.2rem'}">${g.e}</span>`;
   }
