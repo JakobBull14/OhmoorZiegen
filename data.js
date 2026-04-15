@@ -165,7 +165,6 @@ function clearScores() { LS.s('sz_scores', []); }
 // ══════════════════════════════════════════
 // ABSTIMMUNG
 // ══════════════════════════════════════════
-// Wir nutzen einen einfachen Browser-Fingerprint statt Login
 function getVoterKey() {
   let key = LS.g('sz_voter_key');
   if (!key) {
@@ -175,17 +174,43 @@ function getVoterKey() {
   return key;
 }
 
-function getVotedId()   { return LS.g('sz_voted_' + getVoterKey()); }
-function setVotedId(id) { LS.s('sz_voted_' + getVoterKey(), id); }
+function getVotedId() {
+  return LS.g('sz_voted_id') ?? null;
+}
 
-function resetAllVotes() {
-  const goats = getGoats();
-  goats.forEach(g => g.votes = 0);
-  saveGoats(goats);
-  // Alle Vote-Keys löschen
-  Object.keys(localStorage)
-    .filter(k => k.startsWith('sz_voted_'))
-    .forEach(k => localStorage.removeItem(k));
+function setVotedId(id) {
+  LS.s('sz_voted_id', id);
+}
+
+async function fetchVoteResults() {
+  const res = await fetch(`${API_BASE}/api/votes/results`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Vote API ${res.status}`);
+  return await res.json();
+}
+
+async function submitVote(goatId) {
+  const res = await fetch(`${API_BASE}/api/votes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ goat_id: goatId, device_token: getVoterKey() })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || `Vote API ${res.status}`);
+  }
+
+  setVotedId(goatId);
+  return data;
+}
+
+async function resetAllVotes() {
+  const res = await fetch(`${API_BASE}/api/admin/votes/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`Reset API ${res.status}`);
+  LS.del('sz_voted_id');
 }
 
 // ══════════════════════════════════════════

@@ -20,20 +20,20 @@
 <script>
 buildNav('monat');
 
-function render() {
-  const goats  = getGoats();
-  const sorted = [...goats].sort((a, b) => b.votes - a.votes);
-  const w      = sorted[0];
-  const total  = goats.reduce((s, g) => s + g.votes, 0);
-  const votedId = getVotedId();
+let goats = [];
+let voteResults = { total_votes: 0, counts: {} };
 
-  const wph = (w.photos && w.photos.length)
-    ? `<img src="${w.photos[0]}" alt="${w.name}">`
-    : w.foto
-      ? `<img src="${w.foto}" alt="${w.name}" onerror="this.style.display='none'">`
-      : w.e;
+function buildWinnerCard(sorted, total) {
+  const w = sorted[0];
+  if (!w) {
+    return `<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Ziegen gefunden.</p>`;
+  }
 
-  document.getElementById('gotm-body').innerHTML = `
+  const wph = w.foto
+    ? `<img src="${w.foto}" alt="${w.name}" onerror="this.style.display='none'">`
+    : w.e;
+
+  return `
     <div class="gotm-card">
       <div class="gotm-photo">${wph}</div>
       <div>
@@ -42,25 +42,43 @@ function render() {
         <div class="gotm-sub">${w.nick} · ${w.character}</div>
         <div class="gotm-votes">♥ ${w.votes} Stimmen${total > 0 ? ` · ${Math.round(w.votes / total * 100)}%` : ''}</div>
       </div>
-    </div>
+    </div>`;
+}
+
+function render() {
+  const body = document.getElementById('gotm-body');
+  if (!goats.length) {
+    body.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Abstimmung ...</p>`;
+    return;
+  }
+
+  const enriched = goats.map(g => ({
+    ...g,
+    votes: Number(voteResults.counts?.[String(g.id)] || voteResults.counts?.[g.id] || 0)
+  }));
+
+  const sorted = [...enriched].sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'de'));
+  const total = enriched.reduce((sum, g) => sum + g.votes, 0);
+  const votedId = getVotedId();
+
+  body.innerHTML = `
+    ${buildWinnerCard(sorted, total)}
 
     ${total === 0
       ? `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:16px">
-           Noch keine Stimmen – gehe zu einer Ziege und stimme ab!
+           Noch keine Stimmen – stimme jetzt für deine Lieblingsziege ab!
          </p>`
       : ''}
 
     <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--clr-text-faint);margin-bottom:12px">
-      Abstimmungsergebnis
+      Abstimmungsergebnis · insgesamt ${total} Stimmen
     </div>
 
     <div id="vote-list">
       ${sorted.map(g => {
-        const ph = (g.photos && g.photos.length)
-          ? `<img src="${g.photos[0]}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0">`
-          : g.foto
-            ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
-            : `<span style="font-size:18px">${g.e}</span>`;
+        const ph = g.foto
+          ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
+          : `<span style="font-size:18px">${g.e}</span>`;
         const pct = total > 0 ? Math.round(g.votes / total * 100) : 0;
         return `<div class="vote-row">
           ${ph}
@@ -69,38 +87,43 @@ function render() {
           <span class="vote-row-count">♥ ${g.votes}</span>
           ${votedId === null
             ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Abstimmen</button>`
-            : votedId === g.id
+            : Number(votedId) === Number(g.id)
               ? `<span style="font-size:12px;color:var(--clr-green);font-weight:600">✓ Deine Wahl</span>`
               : `<span style="font-size:12px;color:var(--clr-text-faint)">—</span>`
           }
         </div>`;
       }).join('')}
-    </div>
-
-    ${isAdminLoggedIn() ? `
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border-soft)">
-        <button class="btn-danger" onclick="doResetVotes()">Alle Stimmen zurücksetzen</button>
-      </div>` : ''}`;
+    </div>`;
 }
 
-function doVote(id) {
+async function doVote(id) {
   if (getVotedId() !== null) return;
-  const goats = getGoats();
-  const g = goats.find(g => g.id === id);
-  if (!g) return;
-  g.votes++;
-  setVotedId(id);
-  saveGoats(goats);
+  try {
+    await submitVote(id);
+    voteResults = await fetchVoteResults();
+    render();
+  } catch (err) {
+    alert(err.message || 'Abstimmung fehlgeschlagen.');
+  }
+}
+
+async function initPage() {
+  try {
+    goats = await getGoatsFromApi();
+  } catch (err) {
+    goats = getGoats();
+  }
+
+  try {
+    voteResults = await fetchVoteResults();
+  } catch (err) {
+    voteResults = { total_votes: 0, counts: {} };
+  }
+
   render();
 }
 
-function doResetVotes() {
-  if (!confirm('Alle Stimmen zurücksetzen?')) return;
-  resetAllVotes();
-  render();
-}
-
-render();
+initPage();
 </script>
 </body>
 </html>
