@@ -401,6 +401,15 @@ async function adminAddGoat(goat, adminPassword) {
   });
 }
 
+
+async function adminUpdateGoat(id, goat, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${id}`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(goat)
+  });
+}
+
 async function adminDeleteGoat(id, adminPassword) {
   return await apiRequest(`/api/admin/goats/${id}`, {
     method: 'DELETE',

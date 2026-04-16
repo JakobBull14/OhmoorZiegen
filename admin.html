@@ -61,6 +61,38 @@
       </div>
 
       <div class="admin-section">
+        <div class="admin-section-title">✏️ Bestehende Ziege bearbeiten</div>
+        <div class="f-group">
+          <label>Ziege auswählen</label>
+          <select id="edit-sel" onchange="fillEditForm()"></select>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="f-group"><label>Name *</label><input id="e-name"></div>
+          <div class="f-group"><label>Spitzname</label><input id="e-nick"></div>
+          <div class="f-group"><label>Rasse</label><input id="e-breed"></div>
+          <div class="f-group"><label>Alter</label><input id="e-age"></div>
+          <div class="f-group"><label>Charakter</label><input id="e-char"></div>
+          <div class="f-group"><label>Lieblingsessen</label><input id="e-food"></div>
+        </div>
+        <div class="f-group" style="margin-top:12px">
+          <label>Geschichte</label>
+          <textarea id="e-story"></textarea>
+        </div>
+        <div class="f-group" style="margin-top:12px">
+          <label>Besondere Fähigkeit</label>
+          <input id="e-skill">
+        </div>
+        <div class="f-group" style="margin-top:12px">
+          <label>Bild-URL</label>
+          <input id="e-image" placeholder="/OhmoorZiegen/bilder/Name.jpeg">
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="saveEditedGoat()">Änderungen speichern</button>
+        </div>
+        <div id="edit-msg"></div>
+      </div>
+
+      <div class="admin-section">
         <div class="admin-section-title">🗑️ Ziege entfernen</div>
         <div class="f-group">
           <label>Ziege auswählen</label>
@@ -89,7 +121,7 @@
       <div class="admin-section">
         <div class="admin-section-title">ℹ️ Noch nicht umgestellt</div>
         <p class="section-sub" style="margin-bottom:0">
-          Quiz-Verwaltung und Bild-Upload bauen wir im nächsten Schritt zentral um. Diese erste Admin-Version verwaltet jetzt schon Ziegen, Voting und Rangliste online.
+          Quiz-Verwaltung und Bild-Upload bauen wir im nächsten Schritt zentral um. Diese Admin-Version verwaltet jetzt schon Ziegen, Bearbeiten, Voting und Rangliste online.
         </p>
       </div>
     </div>
@@ -133,18 +165,44 @@ async function showAdmin() {
   buildNav('admin');
 }
 
+function goatOptionLabel(g) {
+  return `${g.name}${g.nick ? ' – ' + g.nick : ''}`;
+}
+
+function fillEditForm() {
+  const id = Number(document.getElementById('edit-sel').value);
+  const goat = cloudGoats.find(g => g.id === id);
+  if (!goat) return;
+  document.getElementById('e-name').value = goat.name || '';
+  document.getElementById('e-nick').value = goat.nick || '';
+  document.getElementById('e-breed').value = goat.breed || '';
+  document.getElementById('e-age').value = goat.age || '';
+  document.getElementById('e-char').value = goat.character || '';
+  document.getElementById('e-food').value = goat.food || '';
+  document.getElementById('e-story').value = goat.story || '';
+  document.getElementById('e-skill').value = goat.skill || '';
+  document.getElementById('e-image').value = goat.foto || `/OhmoorZiegen/bilder/${encodeURIComponent(goat.name || '')}.jpeg`;
+}
+
 async function loadCloudGoats() {
   const list = document.getElementById('goat-list-admin');
   list.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Ziegen ...</p>';
   cloudGoats = await getGoatsFromApi();
-  const sel = document.getElementById('del-sel');
-  sel.innerHTML = cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – '+escHtml(g.nick) : ''}</option>`).join('');
+
+  const delSel = document.getElementById('del-sel');
+  const editSel = document.getElementById('edit-sel');
+  const options = cloudGoats.map(g => `<option value="${g.id}">${escHtml(goatOptionLabel(g))}</option>`).join('');
+  delSel.innerHTML = options;
+  editSel.innerHTML = options;
+  fillEditForm();
+
   list.innerHTML = `
     <div style="display:grid;gap:10px">
       ${cloudGoats.map(g => `
         <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
           <div style="font-weight:700">${escHtml(g.name)}</div>
-          <div style="font-size:13px;color:var(--clr-text-muted)">${escHtml(g.nick || '')}</div>
+          <div style="font-size:13px;color:var(--clr-text-muted);margin-top:2px">${escHtml(g.nick || '')}</div>
+          <div style="font-size:12px;color:var(--clr-text-muted);margin-top:6px">${escHtml(g.breed || '')}${g.age ? ' · ' + escHtml(g.age) : ''}</div>
         </div>`).join('')}
     </div>`;
 }
@@ -171,6 +229,35 @@ async function addGoat() {
     await loadCloudGoats();
   } catch (err) {
     showMsg('add-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
+  }
+}
+
+async function saveEditedGoat() {
+  const id = Number(document.getElementById('edit-sel').value);
+  if (!id) return;
+
+  const name = document.getElementById('e-name').value.trim();
+  if (!name) { showMsg('edit-msg', 'Name fehlt.', 'err'); return; }
+
+  try {
+    await adminUpdateGoat(id, {
+      name,
+      nickname: document.getElementById('e-nick').value.trim() || '',
+      breed: document.getElementById('e-breed').value.trim() || '',
+      age: document.getElementById('e-age').value.trim() || '',
+      character: document.getElementById('e-char').value.trim() || '',
+      favorite_food: document.getElementById('e-food').value.trim() || '',
+      story: document.getElementById('e-story').value.trim() || '',
+      special_skill: document.getElementById('e-skill').value.trim() || '',
+      main_image_url: document.getElementById('e-image').value.trim() || `/OhmoorZiegen/bilder/${encodeURIComponent(name)}.jpeg`
+    }, adminPw);
+
+    showMsg('edit-msg', `${name} wurde aktualisiert.`, 'ok');
+    await loadCloudGoats();
+    document.getElementById('edit-sel').value = String(id);
+    fillEditForm();
+  } catch (err) {
+    showMsg('edit-msg', err.message || 'Aktualisieren fehlgeschlagen.', 'err');
   }
 }
 
