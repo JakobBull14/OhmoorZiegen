@@ -373,44 +373,7 @@ function getDisplayName() {
 
 function setDisplayName(name) { LS.s('sz_display_name', name); }
 
-
-async function adminUpdateGoat(id, goat, adminPassword) {
-  return await apiRequest(`/api/admin/goats/${id}`, {
-    method: 'PUT',
-    headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify(goat)
-  });
-}
-
-async function fetchGoatImages(goatId) {
-  const res = await fetch(`${API_BASE}/api/goat-images?goat_id=${encodeURIComponent(goatId)}`, { cache: 'no-store' });
-  const data = await res.json().catch(() => ([]));
-  if (!res.ok) throw new Error(data.error || `API ${res.status}`);
-  return data;
-}
-
-async function adminUpdateGoatMainImage(id, mainImageUrl, adminPassword) {
-  return await apiRequest(`/api/admin/goats/${id}/main-image`, {
-    method: 'PUT',
-    headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify({ main_image_url: mainImageUrl || '' })
-  });
-}
-
-async function adminAddGoatImage(goatId, imageUrl, caption, adminPassword) {
-  return await apiRequest('/api/admin/goat-images', {
-    method: 'POST',
-    headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify({ goat_id: goatId, image_url: imageUrl || '', caption: caption || '' })
-  });
-}
-
-async function adminDeleteGoatImage(id, adminPassword) {
-  return await apiRequest(`/api/admin/goat-images/${id}`, {
-    method: 'DELETE',
-    headers: { 'X-Admin-Password': adminPassword }
-  });
-}
+// ================= API HELPER =================
 async function apiRequest(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -424,25 +387,20 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
-async function adminAddGoatImage(goatId, imageUrl, caption, adminPassword) {
-  return await apiRequest(`/api/admin/goats/${goatId}/images`, {
-    method: 'POST',
-    headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify({ image_url: imageUrl, caption: caption || '' })
-  });
-}
-
-async function adminDeleteGoatImage(imageId, adminPassword) {
-  return await apiRequest(`/api/admin/images/${imageId}`, {
-    method: 'DELETE',
-    headers: { 'X-Admin-Password': adminPassword }
-  });
-}
-
-async function adminUpdateMainImage(goatId, mainImageUrl, adminPassword) {
-  return await apiRequest(`/api/admin/goats/${goatId}`, {
+// ================= ADMIN UPDATE GOAT =================
+async function adminUpdateGoat(id, goat, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${id}`, {
     method: 'PUT',
     headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify({ main_image_url: mainImageUrl })
+    body: JSON.stringify(goat)
+  });
+}
+
+// ================= MAIN IMAGE =================
+async function adminUpdateGoatMainImage(id, mainImageUrl, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${id}/main-image`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify({ main_image_url: mainImageUrl || '' })
   });
 }
