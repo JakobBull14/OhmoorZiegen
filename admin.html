@@ -7,20 +7,15 @@
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
 </head>
 <body>
-
 <div id="nav-root"></div>
-
 <main class="app-main">
-
-  <!-- LOGIN-MASKE (wird ausgeblendet wenn eingeloggt) -->
   <div id="login-screen">
     <div style="max-width:360px;margin:0 auto">
       <div class="page-title">🔐 Admin-Login</div>
       <p class="section-sub">Dieser Bereich ist nur für Lehrerinnen und Lehrer.</p>
       <div class="form-group">
         <label class="form-label">Admin-Passwort</label>
-        <input class="form-input" id="pw-input" type="password" placeholder="Passwort eingeben"
-               onkeydown="if(event.key==='Enter')doLogin()">
+        <input class="form-input" id="pw-input" type="password" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn-primary btn-primary-full" onclick="doLogin()">Anmelden</button>
       <div class="auth-msg" id="login-msg"></div>
@@ -30,21 +25,17 @@
     </div>
   </div>
 
-  <!-- ADMIN-INHALT (nur nach Login sichtbar) -->
   <div id="admin-screen" class="hidden">
-
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px">
       <div class="page-title" style="margin-bottom:0">🔐 Admin-Bereich</div>
       <button class="btn-danger" onclick="doLogout()">Abmelden</button>
     </div>
 
     <div class="admin-badge" style="margin-bottom:28px">
-      ✓ Du bist als Admin angemeldet. Alle Ziegen-Texte und Fotos können direkt auf der Ziegen-Seite bearbeitet werden.
+      ✓ Dieser Bereich arbeitet jetzt für Ziegen, Abstimmung und Rangliste zentral über die Online-Datenbank.
     </div>
 
     <div class="admin-wrap">
-
-      <!-- ZIEGE HINZUFÜGEN -->
       <div class="admin-section">
         <div class="admin-section-title">➕ Neue Ziege hinzufügen</div>
         <div class="form-grid">
@@ -54,10 +45,6 @@
           <div class="f-group"><label>Alter</label><input id="a-age" placeholder="z.B. 3 Jahre"></div>
           <div class="f-group"><label>Charakter</label><input id="a-char"></div>
           <div class="f-group"><label>Lieblingsessen</label><input id="a-food"></div>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Mutter</label>
-          <select id="a-mother"></select>
         </div>
         <div class="f-group" style="margin-top:12px">
           <label>Geschichte</label>
@@ -73,7 +60,6 @@
         <div id="add-msg"></div>
       </div>
 
-      <!-- ZIEGE ENTFERNEN -->
       <div class="admin-section">
         <div class="admin-section-title">🗑️ Ziege entfernen</div>
         <div class="f-group">
@@ -83,227 +69,148 @@
         <div class="btn-row">
           <button class="btn-danger" onclick="removeGoat()">Ausgewählte Ziege entfernen</button>
         </div>
+        <div id="del-msg"></div>
       </div>
 
-      <!-- QUIZ-EDITOR -->
       <div class="admin-section">
-        <div class="admin-section-title">🧠 Quiz-Fragen bearbeiten</div>
-        <p class="section-sub">Änderungen werden automatisch gespeichert.</p>
-        <div id="quiz-editor"></div>
-        <button class="add-question-btn" onclick="addQuizQ()">+ Neue Frage hinzufügen</button>
+        <div class="admin-section-title">🧾 Aktuelle Ziegen in der Cloud</div>
+        <div id="goat-list-admin"></div>
       </div>
 
-      <!-- MEMORY-EINSTELLUNGEN -->
-      <div class="admin-section">
-        <div class="admin-section-title">🃏 Memory-Einstellungen</div>
-        <div class="mem-config">
-          <div class="mem-config-row">
-            <label>Anzahl Paare:</label>
-            <select id="mem-pairs" class="form-input" style="width:auto" onchange="saveMemCfg()">
-              ${[3,4,5,6,7,8,9].map(n => `<option value="${n}">${n} Paare</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div id="mem-msg"></div>
-      </div>
-
-      <!-- AKTIONEN -->
       <div class="admin-section">
         <div class="admin-section-title">⚙️ Weitere Aktionen</div>
         <div class="btn-row">
           <button class="btn-danger" onclick="doResetVotes()">Alle Abstimmungs-Stimmen zurücksetzen</button>
           <button class="btn-danger" onclick="doResetScores()">Rangliste leeren</button>
         </div>
+        <div id="act-msg"></div>
       </div>
 
+      <div class="admin-section">
+        <div class="admin-section-title">ℹ️ Noch nicht umgestellt</div>
+        <p class="section-sub" style="margin-bottom:0">
+          Quiz-Verwaltung und Bild-Upload bauen wir im nächsten Schritt zentral um. Diese erste Admin-Version verwaltet jetzt schon Ziegen, Voting und Rangliste online.
+        </p>
+      </div>
     </div>
   </div>
 </main>
-
 <script src="/OhmoorZiegen/data.js"></script>
 <script src="/OhmoorZiegen/nav.js"></script>
 <script>
 buildNav('admin');
+let adminPw = '';
+let cloudGoats = [];
 
-// ── LOGIN ──
+function showMsg(id, text, type='ok') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="auth-msg ${type==='err'?'err':'ok'}">${escHtml(text)}</div>`;
+}
+
 function doLogin() {
   const pw = document.getElementById('pw-input').value;
   if (adminLogin(pw)) {
+    adminPw = pw;
     showAdmin();
   } else {
-    const msg = document.getElementById('login-msg');
-    msg.textContent = 'Falsches Passwort.';
-    msg.className = 'auth-msg err';
+    showMsg('login-msg', 'Falsches Passwort.', 'err');
     document.getElementById('pw-input').value = '';
   }
 }
 
 function doLogout() {
   adminLogout();
+  adminPw = '';
   document.getElementById('admin-screen').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
 }
 
-function showAdmin() {
+async function showAdmin() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('admin-screen').classList.remove('hidden');
-  initAdminForms();
-  renderQuizEditor();
-  // Nav neu bauen (jetzt mit Admin-Link)
+  await loadCloudGoats();
   buildNav('admin');
 }
 
-// Beim Laden prüfen
-if (isAdminLoggedIn()) { showAdmin(); }
-
-// ── FORMULARE INITIALISIEREN ──
-function initAdminForms() {
-  const goats = getGoats();
-  const cfg   = getMemConfig();
-
-  // Mutter-Select füllen
-  const motherSel = document.getElementById('a-mother');
-  motherSel.innerHTML = '<option value="">— Keine —</option>' +
-    goats.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-
-  // Löschen-Select füllen
-  document.getElementById('del-sel').innerHTML =
-    goats.map(g => `<option value="${g.id}">${g.name} – ${g.nick}</option>`).join('');
-
-  // Memory-Paare
-  document.getElementById('mem-pairs').value = cfg.pairs;
+async function loadCloudGoats() {
+  const list = document.getElementById('goat-list-admin');
+  list.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Ziegen ...</p>';
+  cloudGoats = await getGoatsFromApi();
+  const sel = document.getElementById('del-sel');
+  sel.innerHTML = cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – '+escHtml(g.nick) : ''}</option>`).join('');
+  list.innerHTML = `
+    <div style="display:grid;gap:10px">
+      ${cloudGoats.map(g => `
+        <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
+          <div style="font-weight:700">${escHtml(g.name)}</div>
+          <div style="font-size:13px;color:var(--clr-text-muted)">${escHtml(g.nick || '')}</div>
+        </div>`).join('')}
+    </div>`;
 }
 
-// ── ZIEGE HINZUFÜGEN ──
-function addGoat() {
+async function addGoat() {
   const name = document.getElementById('a-name').value.trim();
-  if (!name) { showMsg('add-msg', 'Name fehlt!', 'err'); return; }
+  if (!name) { showMsg('add-msg', 'Name fehlt.', 'err'); return; }
 
-  const goats = getGoats();
-  const newId = Math.max(...goats.map(g => g.id), 0) + 1;
+  try {
+    await adminAddGoat({
+      name,
+      nickname: document.getElementById('a-nick').value.trim() || '',
+      breed: document.getElementById('a-breed').value.trim() || '',
+      age: document.getElementById('a-age').value.trim() || '',
+      character: document.getElementById('a-char').value.trim() || '',
+      favorite_food: document.getElementById('a-food').value.trim() || '',
+      story: document.getElementById('a-story').value.trim() || '',
+      special_skill: document.getElementById('a-skill').value.trim() || '',
+      main_image_url: `/OhmoorZiegen/bilder/${encodeURIComponent(name)}.jpeg`
+    }, adminPw);
 
-  goats.push({
-    id:        newId,
-    name,
-    nick:      document.getElementById('a-nick').value.trim()  || name,
-    breed:     document.getElementById('a-breed').value.trim() || 'Hausziege',
-    age:       document.getElementById('a-age').value.trim()   || '?',
-    character: document.getElementById('a-char').value.trim()  || '—',
-    food:      document.getElementById('a-food').value.trim()  || '—',
-    mother:    document.getElementById('a-mother').value       || null,
-    story:     document.getElementById('a-story').value.trim() || '—',
-    skill:     document.getElementById('a-skill').value.trim() || '—',
-    photos: [], votes: 0, e: '🐐'
-  });
-
-  saveGoats(goats);
-  showMsg('add-msg', `✓ ${name} wurde hinzugefügt!`, 'ok');
-  ['a-name','a-nick','a-breed','a-age','a-char','a-food','a-story','a-skill'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  setTimeout(initAdminForms, 600);
+    ['a-name','a-nick','a-breed','a-age','a-char','a-food','a-story','a-skill'].forEach(id => document.getElementById(id).value = '');
+    showMsg('add-msg', `${name} wurde online gespeichert.`, 'ok');
+    await loadCloudGoats();
+  } catch (err) {
+    showMsg('add-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
+  }
 }
 
-// ── ZIEGE ENTFERNEN ──
-function removeGoat() {
-  const id = parseInt(document.getElementById('del-sel').value);
-  const goats = getGoats();
-  const g = goats.find(g => g.id === id);
-  if (!g) return;
-  if (!confirm(`"${g.name}" wirklich entfernen?`)) return;
-  saveGoats(goats.filter(g => g.id !== id));
-  initAdminForms();
+async function removeGoat() {
+  const id = Number(document.getElementById('del-sel').value);
+  const goat = cloudGoats.find(g => g.id === id);
+  if (!goat) return;
+  if (!confirm(`"${goat.name}" wirklich entfernen?`)) return;
+  try {
+    await adminDeleteGoat(id, adminPw);
+    showMsg('del-msg', `${goat.name} wurde gelöscht.`, 'ok');
+    await loadCloudGoats();
+  } catch (err) {
+    showMsg('del-msg', err.message || 'Löschen fehlgeschlagen.', 'err');
+  }
 }
 
-// ── MEMORY ──
-function saveMemCfg() {
-  const pairs = parseInt(document.getElementById('mem-pairs').value);
-  saveMemConfig({ pairs, mode: 'photo-emoji' });
-  showMsg('mem-msg', 'Gespeichert!', 'ok');
-  setTimeout(() => { document.getElementById('mem-msg').innerHTML = ''; }, 2000);
+async function doResetVotes() {
+  if (!confirm('Alle Stimmen wirklich zurücksetzen?')) return;
+  try {
+    await adminResetVotes(adminPw);
+    showMsg('act-msg', 'Alle Stimmen wurden zurückgesetzt.', 'ok');
+  } catch (err) {
+    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
+  }
 }
 
-// ── QUIZ-EDITOR ──
-function renderQuizEditor() {
-  const qs = getQuiz();
-  document.getElementById('quiz-editor').innerHTML = qs.map((q, qi) => `
-    <div class="qe-item">
-      <div class="qe-header">
-        <span class="qe-question-text">${qi + 1}. ${escHtml(q.q)}</span>
-        <button class="qe-delete" onclick="deleteQuizQ(${qi})">✕</button>
-      </div>
-      <div class="qe-body">
-        <div class="qe-field">
-          <label>Frage</label>
-          <input value="${escHtml(q.q)}" onchange="updateQuizQ(${qi},'q',this.value)">
-        </div>
-        <div class="qe-field">
-          <label>Emoji</label>
-          <input value="${q.e}" onchange="updateQuizQ(${qi},'e',this.value)" style="width:80px">
-        </div>
-        <div class="qe-field">
-          <label>Antworten (Kreis = richtige Antwort)</label>
-          <div class="qe-answers-grid">
-            ${q.a.map((a, ai) => `
-              <div class="qe-answer-wrap">
-                <span class="qe-answer-label">${String.fromCharCode(65 + ai)}:</span>
-                <input value="${escHtml(a)}" onchange="updateQuizQ(${qi},'a${ai}',this.value)" style="flex:1">
-                <input type="radio" name="correct_${qi}" value="${ai}"
-                       ${q.c === ai ? 'checked' : ''}
-                       onchange="updateQuizQ(${qi},'c',${ai})" title="Richtige Antwort">
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function updateQuizQ(qi, key, val) {
-  const qs = getQuiz();
-  if (key === 'q') qs[qi].q = val;
-  else if (key === 'e') qs[qi].e = val;
-  else if (key.startsWith('a')) qs[qi].a[parseInt(key[1])] = val;
-  else if (key === 'c') qs[qi].c = parseInt(val);
-  saveQuiz(qs);
-}
-
-function deleteQuizQ(qi) {
-  if (!confirm('Frage löschen?')) return;
-  const qs = getQuiz();
-  qs.splice(qi, 1);
-  saveQuiz(qs);
-  renderQuizEditor();
-}
-
-function addQuizQ() {
-  const qs = getQuiz();
-  qs.push({ q:"Neue Frage?", e:"🐐", a:["Antwort A","Antwort B","Antwort C","Antwort D"], c:0 });
-  saveQuiz(qs);
-  renderQuizEditor();
-  setTimeout(() => {
-    const items = document.querySelectorAll('.qe-item');
-    if (items.length) items[items.length - 1].scrollIntoView({ behavior:'smooth' });
-  }, 100);
-}
-
-// ── WEITERE AKTIONEN ──
-function doResetVotes() {
-  if (!confirm('Alle Stimmen für "Ziege des Monats" zurücksetzen?')) return;
-  resetAllVotes();
-  alert('Stimmen wurden zurückgesetzt.');
-}
-
-function doResetScores() {
+async function doResetScores() {
   if (!confirm('Rangliste wirklich leeren?')) return;
-  clearScores();
-  alert('Rangliste geleert.');
+  try {
+    await adminResetLeaderboard(adminPw);
+    showMsg('act-msg', 'Rangliste wurde geleert.', 'ok');
+  } catch (err) {
+    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
+  }
 }
 
-// ── HILFSFUNKTIONEN ──
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
-  el.innerHTML = `<div class="msg ${type}">${text}</div>`;
-  setTimeout(() => el.innerHTML = '', 3000);
+if (isAdminLoggedIn()) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('admin-screen').classList.remove('hidden');
 }
 </script>
 </body>
