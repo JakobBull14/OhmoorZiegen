@@ -404,3 +404,25 @@ async function adminUpdateGoatMainImage(id, mainImageUrl, adminPassword) {
     body: JSON.stringify({ main_image_url: mainImageUrl || '' })
   });
 }
+async function adminAddQuizQuestion(questionData, adminPassword) {
+  return await apiRequest('/api/admin/quiz', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(questionData)
+  });
+}
+
+async function adminUpdateQuizQuestion(id, questionData, adminPassword) {
+  return await apiRequest(`/api/admin/quiz/${id}`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(questionData)
+  });
+}
+
+async function adminDeleteQuizQuestion(id, adminPassword) {
+  return await apiRequest(`/api/admin/quiz/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
