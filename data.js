@@ -57,6 +57,17 @@ function ziegenbild(name) {
 
 const API_BASE = 'https://ziegen-api.torstenbull.workers.dev';
 
+// 🔄 Migration: alte lokale Daten entfernen (einmalig)
+(function () {
+  const version = localStorage.getItem('sz_data_version');
+
+  if (version !== '2') {
+    localStorage.removeItem('sz_goats');
+    localStorage.setItem('sz_data_version', '2');
+    console.log('Alte lokale Ziegendaten wurden bereinigt');
+  }
+})();
+
 function mapApiGoat(row) {
   return {
     id: row.id,
