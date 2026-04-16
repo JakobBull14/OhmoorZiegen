@@ -411,3 +411,38 @@ async function adminDeleteGoatImage(id, adminPassword) {
     headers: { 'X-Admin-Password': adminPassword }
   });
 }
+async function apiRequest(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `API ${res.status}`);
+  return data;
+}
+
+async function adminAddGoatImage(goatId, imageUrl, caption, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${goatId}/images`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify({ image_url: imageUrl, caption: caption || '' })
+  });
+}
+
+async function adminDeleteGoatImage(imageId, adminPassword) {
+  return await apiRequest(`/api/admin/images/${imageId}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminUpdateMainImage(goatId, mainImageUrl, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${goatId}`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify({ main_image_url: mainImageUrl })
+  });
+}
