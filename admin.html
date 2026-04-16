@@ -32,7 +32,7 @@
     </div>
 
     <div class="admin-badge" style="margin-bottom:28px">
-      ✓ Ziegen, Bilder, Abstimmung und Rangliste werden zentral online verwaltet.
+      ✓ Ziegen, Bilder, Abstimmung, Rangliste und Quiz werden zentral online verwaltet.
     </div>
 
     <div class="admin-wrap">
@@ -148,6 +148,42 @@
       </div>
 
       <div class="admin-section">
+        <div class="admin-section-title">❓ Quiz verwalten</div>
+
+        <div style="margin-bottom:16px">
+          <button class="btn-primary" onclick="loadQuizAdmin()">Quiz neu laden</button>
+        </div>
+
+        <div id="quiz-list"></div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+          <div style="font-weight:700;margin-bottom:10px">Neue Frage hinzufügen</div>
+
+          <div class="f-group"><label>Frage</label><input id="q-question"></div>
+          <div class="f-group"><label>A</label><input id="q-a"></div>
+          <div class="f-group"><label>B</label><input id="q-b"></div>
+          <div class="f-group"><label>C</label><input id="q-c"></div>
+          <div class="f-group"><label>D</label><input id="q-d"></div>
+
+          <div class="f-group">
+            <label>Richtige Antwort</label>
+            <select id="q-correct">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-primary" onclick="addQuizQuestion()">Frage speichern</button>
+          </div>
+
+          <div id="quiz-msg"></div>
+        </div>
+      </div>
+
+      <div class="admin-section">
         <div class="admin-section-title">🧾 Aktuelle Ziegen in der Cloud</div>
         <div id="goat-list-admin"></div>
       </div>
@@ -163,6 +199,7 @@
     </div>
   </div>
 </main>
+
 <script src="/OhmoorZiegen/data.js"></script>
 <script src="/OhmoorZiegen/nav.js"></script>
 <script>
@@ -199,6 +236,7 @@ async function showAdmin() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('admin-screen').classList.remove('hidden');
   await loadCloudGoats();
+  await loadQuizAdmin();
   buildNav('admin');
 }
 
@@ -218,7 +256,7 @@ function renderGoatCards() {
 function fillSelect(id) {
   const sel = document.getElementById(id);
   if (!sel) return;
-  sel.innerHTML = cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – '+escHtml(g.nick) : ''}</option>`).join('');
+  sel.innerHTML = cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – ' + escHtml(g.nick) : ''}</option>`).join('');
 }
 
 function fillEditForm() {
@@ -391,6 +429,71 @@ async function deleteGalleryImage(id) {
     await loadImageManager();
   } catch (err) {
     showMsg('img-msg', err.message || 'Löschen fehlgeschlagen.', 'err');
+  }
+}
+
+async function loadQuizAdmin() {
+  const box = document.getElementById('quiz-list');
+  box.innerHTML = 'Lade Quiz...';
+
+  try {
+    const res = await fetch(API_BASE + '/api/quiz');
+    const data = await res.json();
+
+    if (!data.length) {
+      box.innerHTML = '<p>Keine Fragen vorhanden.</p>';
+      return;
+    }
+
+    box.innerHTML = data.map(q => `
+      <div style="padding:10px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
+        <div style="font-weight:700">${escHtml(q.question)}</div>
+        <div style="font-size:13px">A: ${escHtml(q.option_a)}</div>
+        <div style="font-size:13px">B: ${escHtml(q.option_b)}</div>
+        <div style="font-size:13px">C: ${escHtml(q.option_c)}</div>
+        <div style="font-size:13px">D: ${escHtml(q.option_d)}</div>
+        <div style="font-size:12px;color:var(--clr-text-muted)">Richtig: ${q.correct_option}</div>
+        <button class="btn-danger" style="margin-top:8px" onclick="deleteQuiz(${q.id})">Löschen</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    box.innerHTML = 'Fehler beim Laden';
+  }
+}
+
+async function addQuizQuestion() {
+  try {
+    await adminAddQuizQuestion({
+      question: document.getElementById('q-question').value,
+      option_a: document.getElementById('q-a').value,
+      option_b: document.getElementById('q-b').value,
+      option_c: document.getElementById('q-c').value,
+      option_d: document.getElementById('q-d').value,
+      correct_option: document.getElementById('q-correct').value
+    }, adminPw);
+
+    document.getElementById('q-question').value = '';
+    document.getElementById('q-a').value = '';
+    document.getElementById('q-b').value = '';
+    document.getElementById('q-c').value = '';
+    document.getElementById('q-d').value = '';
+    document.getElementById('q-correct').value = 'A';
+
+    showMsg('quiz-msg', 'Frage gespeichert', 'ok');
+    await loadQuizAdmin();
+  } catch (err) {
+    showMsg('quiz-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
+  }
+}
+
+async function deleteQuiz(id) {
+  if (!confirm('Frage wirklich löschen?')) return;
+
+  try {
+    await adminDeleteQuizQuestion(id, adminPw);
+    await loadQuizAdmin();
+  } catch (err) {
+    alert('Fehler beim Löschen');
   }
 }
 
