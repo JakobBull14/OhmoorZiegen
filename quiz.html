@@ -20,7 +20,27 @@
 <script>
 buildNav('quiz');
 
-let quizQuestions = getQuiz();
+let quizQuestions = [];
+async function loadQuizFromApi() {
+  try {
+    const res = await fetch('https://ziegen-api.torstenbull.workers.dev/api/quiz');
+    const data = await res.json();
+
+    // API → Format deiner App
+    quizQuestions = data.map(q => ({
+      q: q.question,
+      a: [q.option_a, q.option_b, q.option_c, q.option_d],
+      c: ['A','B','C','D'].indexOf(q.correct_option),
+      e: '🐐'
+    }));
+
+    startQuiz();
+  } catch (e) {
+    document.getElementById('quiz-body').innerHTML =
+      '<div style="padding:20px">Fehler beim Laden des Quiz 😢</div>';
+    console.error(e);
+  }
+}
 let quizState = null;
 
 function startQuiz() {
@@ -95,7 +115,7 @@ function nextQ() {
   renderQuiz();
 }
 
-startQuiz();
+loadQuizFromApi();
 </script>
 </body>
 </html>
