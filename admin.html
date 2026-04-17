@@ -59,6 +59,10 @@
           <input id="e-skill">
         </div>
         <div class="f-group" style="margin-top:12px">
+          <label>Mutter</label>
+          <select id="e-mother"></select>
+        </div>
+        <div class="f-group" style="margin-top:12px">
           <label>Hauptbild-URL</label>
           <input id="e-main-image" placeholder="/OhmoorZiegen/bilder/Olaf.jpeg oder https://...">
         </div>
@@ -272,6 +276,13 @@ function fillEditForm() {
   document.getElementById('e-story').value = goat.story || '';
   document.getElementById('e-skill').value = goat.skill || '';
   document.getElementById('e-main-image').value = goat.foto || '';
+
+const motherSel = document.getElementById('e-mother');
+motherSel.innerHTML = `<option value="">Keine</option>` + cloudGoats
+  .filter(g => g.id !== goat.id)
+  .map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`)
+  .join('');
+motherSel.value = goat.mother_id ? String(goat.mother_id) : '';
 }
 
 async function loadCloudGoats() {
@@ -327,6 +338,7 @@ async function saveEditGoat() {
       favorite_food: document.getElementById('e-food').value.trim() || '',
       story: document.getElementById('e-story').value.trim() || '',
       special_skill: document.getElementById('e-skill').value.trim() || '',
+      mother_id: document.getElementById('e-mother').value ? Number(document.getElementById('e-mother').value) : null,
       main_image_url: document.getElementById('e-main-image').value.trim() || ''
     }, adminPw);
     showMsg('edit-msg', 'Änderungen wurden gespeichert.', 'ok');

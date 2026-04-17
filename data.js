@@ -77,6 +77,7 @@ function mapApiGoat(row) {
     age: row.age || '',
     character: row.character || '',
     food: row.favorite_food || '',
+    mother_id: row.mother_id ?? null,
     mother: row.mother_name || null,
     story: row.story || '',
     skill: row.special_skill || '',
