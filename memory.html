@@ -30,7 +30,11 @@
 <script>
 buildNav('memory');
 
-const goats = getGoats();
+let goats = [];
+
+async function loadGoats() {
+  goats = await getGoatsFromApi();
+}
 let memState = null;
 let cfg = getMemConfig();
 
@@ -168,7 +172,11 @@ async function gameWon() {
 }
 
 showName();
-startMemory();
+
+(async () => {
+  await loadGoats();
+  startMemory();
+})();
 </script>
 </body>
 </html>
