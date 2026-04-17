@@ -95,6 +95,15 @@ async function getGoatsFromApi() {
   return rows.map(mapApiGoat);
 }
 
+async function fetchGoatImages(goatId) {
+  try {
+    const res = await fetch(API_BASE + '/api/goat-images?goat_id=' + goatId);
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+}
+
 // ══════════════════════════════════════════
 // ZIEGEN-DATEN
 // ══════════════════════════════════════════
