@@ -52,7 +52,24 @@ function render() {
   const medals = ['🥇','🥈','🥉'];
 
   lb.innerHTML = `
-    <table class="leaderboard-table">
+  <h2>🏆 Beste Memory-Spieler</h2>
+
+  <div id="top3-podium">
+    <div class="podium-place second">
+      <div class="place">🥈 2</div>
+      <div class="name">Name</div>
+      <div class="moves">Züge</div>
+      <div class="date">Datum</div>
+    </div>
+
+    <div class="podium-place first">
+      <div class="place">🥇 1</div>
+      <div class="name">Name</div>
+      <div class="moves">Züge</div>
+      <div class="date">Datum</div>
+    </div>
+
+    <div class="podium-place third">
       <thead>
         <tr>
           <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>${isAdminLoggedIn() ? '<th></th>' : ''}
