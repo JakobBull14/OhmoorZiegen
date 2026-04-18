@@ -2112,3 +2112,86 @@ input:checked + .toggle-track::before { transform: translateX(18px); }
 .empty-state-icon { font-size: 52px; display: block; margin-bottom: 14px; }
 .empty-state-text { font-size: 15px; color: var(--clr-text-muted); }
 .empty-state-sub  { font-size: 13px; color: var(--clr-text-faint); margin-top: 6px; }
+
+/* ===== TOP 3 PODIUM ===== */
+
+#top3-podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 20px 0 10px;
+}
+
+.podium-place {
+  flex: 1;
+  max-width: 110px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  font-size: 13px;
+}
+
+/* Höhenstaffelung */
+.podium-place.first {
+  height: 140px;
+  transform: translateY(-10px);
+}
+
+.podium-place.second {
+  height: 120px;
+}
+
+.podium-place.third {
+  height: 110px;
+}
+
+/* Farben */
+.podium-place.first {
+  border-top: 4px solid #d4af37; /* Gold */
+}
+
+.podium-place.second {
+  border-top: 4px solid #c0c0c0; /* Silber */
+}
+
+.podium-place.third {
+  border-top: 4px solid #cd7f32; /* Bronze */
+}
+
+/* Inhalte */
+.podium-place .place {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.podium-place .name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.podium-place .moves {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+.podium-place .date {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+/* Mobile */
+@media (max-width: 500px) {
+  #top3-podium {
+    gap: 6px;
+  }
+
+  .podium-place {
+    max-width: 90px;
+    font-size: 12px;
+  }
+}
