@@ -92,8 +92,7 @@ function renderPage() {
 
       ${photoHtml}
 
-      
-      </div>` : ''}
+
 
       <div class="detail-body">
         <div class="detail-name">${goat.name}</div>
@@ -102,19 +101,19 @@ function renderPage() {
         <div class="detail-grid">
           <div>
             <div class="detail-field-label">Rasse</div>
-            <div class="detail-field-value" id="f-breed" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'breed\',this)"' : ''}>${goat.breed}</div>
+            <div class="detail-field-value" id="f-breed">${goat.breed}</div>
           </div>
           <div>
             <div class="detail-field-label">Alter</div>
-            <div class="detail-field-value" id="f-age" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'age\',this)"' : ''}>${goat.age}</div>
+            <div class="detail-field-value" id="f-age">${goat.age}</div>
           </div>
           <div>
             <div class="detail-field-label">Charakter</div>
-            <div class="detail-field-value" id="f-character" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'character\',this)"' : ''}>${goat.character}</div>
+            <div class="detail-field-value" id="f-character">${goat.character}</div>
           </div>
           <div>
             <div class="detail-field-label">Lieblingsessen</div>
-            <div class="detail-field-value" id="f-food" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'food\',this)"' : ''}>${goat.food}</div>
+            <div class="detail-field-value" id="f-food">${goat.food}</div>
           </div>
           ${goat.mother ? `<div>
             <div class="detail-field-label">Mutter</div>
@@ -122,16 +121,16 @@ function renderPage() {
           </div>` : ''}
           <div>
             <div class="detail-field-label">Besondere Fähigkeit</div>
-            <div class="detail-field-value" id="f-skill" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'skill\',this)"' : ''}>${goat.skill}</div>
+            <div class="detail-field-value" id="f-skill">${goat.skill}</div>
           </div>
         </div>
 
         <div class="detail-story">
           <div class="detail-field-label">Geschichte</div>
-          <div class="detail-field-value" id="f-story" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'story\',this)"' : ''}>${goat.story}</div>
+          <div class="detail-field-value" id="f-story">${goat.story}</div>
         </div>
 
-        
+
       </div>
 
       <div class="detail-nav">
@@ -148,7 +147,11 @@ function renderPage() {
       </div>
     </div>`;
 
+  // Foto-Navigation init
+  if (goat.photos && goat.photos.length > 1) {
+    updatePhNav();
   }
+}
 
 // ── Foto-Karussel ──
 let phIdx = 0;
@@ -172,49 +175,6 @@ function updatePhNav() {
   const r = document.getElementById('phr');
   if (l) l.disabled = phIdx === 0;
   if (r) r.disabled = phIdx >= (goat.photos || []).length - 1;
-}
-
-// ── Foto hochladen (Admin) ──
-function handleUpload(e) {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  if (!goat.photos) goat.photos = [];
-  let done = 0;
-  files.forEach(file => {
-    const r = new FileReader();
-    r.onload = ev => {
-      goat.photos.push(ev.target.result);
-      done++;
-      if (done === files.length) {
-        saveGoatData();
-        phIdx = goat.photos.length - 1;
-        renderPage();
-      }
-    };
-    r.readAsDataURL(file);
-  });
-  e.target.value = '';
-}
-
-function deleteCurrentPhoto() {
-  if (!confirm('Dieses Foto löschen?')) return;
-  goat.photos.splice(phIdx, 1);
-  phIdx = Math.max(0, phIdx - 1);
-  saveGoatData();
-  renderPage();
-}
-
-// ── Felder speichern (Admin) ──
-function saveField(field, el) {
-  goat[field] = el.textContent.trim();
-  saveGoatData();
-}
-
-function saveGoatData() {
-  const allGoats = getGoats();
-  const idx = allGoats.findIndex(g => g.id === goat.id);
-  if (idx >= 0) allGoats[idx] = goat;
-  saveGoats(allGoats);
 }
 
 // ── Abstimmen ──
