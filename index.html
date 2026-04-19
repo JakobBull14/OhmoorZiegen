@@ -93,8 +93,7 @@ function renderGallery() {
         : `<span style="font-size:3.5rem">${g.e}</span>`;
     const cnt = g.photos && g.photos.length > 1
       ? `<div class="gc-photo-count">📷 ${g.photos.length}</div>` : '';
-    const vt  = g.votes > 0
-      ? `<div class="gc-badge">♡ ${g.votes}</div>` : '';
+    const vt = `<div class="gc-badge">❤️ ${g.votes || 0}</div>`;
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
       <div class="goat-card-image">${ph}${cnt}${vt}</div>
