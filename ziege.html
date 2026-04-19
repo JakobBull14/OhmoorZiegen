@@ -58,6 +58,7 @@ function renderPage() {
   const votedId = getVotedId();
   const voted   = votedId === goat.id;
   const hasVoted= votedId !== null;
+  const isAdmin = isAdminLoggedIn();
 
   const prevGoat = goatIdx > 0 ? goats[goatIdx - 1] : null;
   const nextGoat = goatIdx < goats.length - 1 ? goats[goatIdx + 1] : null;
@@ -91,6 +92,14 @@ function renderPage() {
 
       ${photoHtml}
 
+      ${isAdmin ? `
+      <div style="padding:10px 16px;background:var(--clr-bg-subtle);border-bottom:1px solid var(--clr-border-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--clr-text-muted)">🔐 Admin: Fotos verwalten</span>
+        <input type="file" id="file-inp" accept="image/*" multiple style="display:none" onchange="handleUpload(event)">
+        <button class="btn-secondary" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('file-inp').click()">📷 Foto hochladen</button>
+        ${goat.photos && goat.photos.length ? `<button class="btn-danger" style="font-size:12px;padding:5px 12px" onclick="deleteCurrentPhoto()">🗑️ Dieses Foto löschen</button>` : ''}
+      </div>` : ''}
+
       <div class="detail-body">
         <div class="detail-name">${goat.name}</div>
         <div class="detail-nick">${goat.nick}</div>
@@ -98,19 +107,19 @@ function renderPage() {
         <div class="detail-grid">
           <div>
             <div class="detail-field-label">Rasse</div>
-            <div class="detail-field-value" id="f-breed" >${goat.breed}</div>
+            <div class="detail-field-value" id="f-breed" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'breed\',this)"' : ''}>${goat.breed}</div>
           </div>
           <div>
             <div class="detail-field-label">Alter</div>
-            <div class="detail-field-value" id="f-age" >${goat.age}</div>
+            <div class="detail-field-value" id="f-age" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'age\',this)"' : ''}>${goat.age}</div>
           </div>
           <div>
             <div class="detail-field-label">Charakter</div>
-            <div class="detail-field-value" id="f-character" >${goat.character}</div>
+            <div class="detail-field-value" id="f-character" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'character\',this)"' : ''}>${goat.character}</div>
           </div>
           <div>
             <div class="detail-field-label">Lieblingsessen</div>
-            <div class="detail-field-value" id="f-food" >${goat.food}</div>
+            <div class="detail-field-value" id="f-food" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'food\',this)"' : ''}>${goat.food}</div>
           </div>
           ${goat.mother ? `<div>
             <div class="detail-field-label">Mutter</div>
@@ -118,21 +127,22 @@ function renderPage() {
           </div>` : ''}
           <div>
             <div class="detail-field-label">Besondere Fähigkeit</div>
-            <div class="detail-field-value" id="f-skill" >${goat.skill}</div>
+            <div class="detail-field-value" id="f-skill" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'skill\',this)"' : ''}>${goat.skill}</div>
           </div>
         </div>
 
         <div class="detail-story">
           <div class="detail-field-label">Geschichte</div>
-          <div class="detail-field-value" id="f-story" >${goat.story}</div>
+          <div class="detail-field-value" id="f-story" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'story\',this)"' : ''}>${goat.story}</div>
         </div>
 
+        ${isAdmin ? `<div style="margin-top:12px;font-size:12px;color:var(--clr-blue)">✏️ Als Admin kannst du alle Texte direkt anklicken und bearbeiten.</div>` : ''}
       </div>
 
       <div class="detail-nav">
         <button class="vote-btn${voted ? ' voted' : ''}" id="vote-btn"
-          onclick="doVote()" ${hasVoted && !voted ? 'disabled' : ''}>
-          ${voted ? '♥ Du hast gewählt' : '♡ Abstimmen'}
+          onclick="doVote()">
+          ${voted ? '♥ Du hast gewählt' : hasVoted ? '♡ Stimme ändern' : '♡ Abstimmen'}
         </button>
         <span style="font-size:13px;color:var(--clr-text-muted)">${goat.votes > 0 ? `♡ ${goat.votes} Stimme${goat.votes !== 1 ? 'n' : ''}` : ''}</span>
 
@@ -142,6 +152,15 @@ function renderPage() {
         </div>
       </div>
     </div>`;
+
+  // Admin-Felder stylen
+  if (isAdmin) {
+    document.querySelectorAll('[contenteditable=true]').forEach(el => {
+      el.style.cssText = 'border:1px solid var(--clr-border);border-radius:var(--radius-sm);padding:4px 6px;background:var(--clr-bg-subtle);cursor:text;outline:none';
+      el.addEventListener('focus', () => el.style.borderColor = 'var(--clr-blue)');
+      el.addEventListener('blur',  () => el.style.borderColor = 'var(--clr-border)');
+    });
+  }
 
   // Foto-Navigation init
   if (goat.photos && goat.photos.length > 1) {
@@ -173,6 +192,42 @@ function updatePhNav() {
   if (r) r.disabled = phIdx >= (goat.photos || []).length - 1;
 }
 
+// ── Foto hochladen (Admin) ──
+function handleUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  if (!goat.photos) goat.photos = [];
+  let done = 0;
+  files.forEach(file => {
+    const r = new FileReader();
+    r.onload = ev => {
+      goat.photos.push(ev.target.result);
+      done++;
+      if (done === files.length) {
+        saveGoatData();
+        phIdx = goat.photos.length - 1;
+        renderPage();
+      }
+    };
+    r.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function deleteCurrentPhoto() {
+  if (!confirm('Dieses Foto löschen?')) return;
+  goat.photos.splice(phIdx, 1);
+  phIdx = Math.max(0, phIdx - 1);
+  saveGoatData();
+  renderPage();
+}
+
+// ── Felder speichern (Admin) ──
+function saveField(field, el) {
+  goat[field] = el.textContent.trim();
+  saveGoatData();
+}
+
 function saveGoatData() {
   const allGoats = getGoats();
   const idx = allGoats.findIndex(g => g.id === goat.id);
@@ -181,14 +236,18 @@ function saveGoatData() {
 }
 
 // ── Abstimmen ──
-function doVote() {
-  if (getVotedId() !== null) return;
-  goat.votes++;
-  setVotedId(goat.id);
-  saveGoatData();
-  document.getElementById('vote-btn').className = 'vote-btn voted';
-  document.getElementById('vote-btn').textContent = '♥ Du hast gewählt';
-  document.getElementById('vote-btn').disabled = true;
+async function doVote() {
+  try {
+    await submitVote(goat.id);
+    await fetchCurrentVote();
+    const allGoats = await getGoatsFromApi();
+    goats = allGoats;
+    goat = goats.find(g => g.id === goatId);
+    goatIdx = goats.findIndex(g => g.id === goatId);
+    renderPage();
+  } catch (err) {
+    alert(err.message || 'Abstimmen fehlgeschlagen.');
+  }
 }
 </script>
 </body>
