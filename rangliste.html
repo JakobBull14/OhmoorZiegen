@@ -137,6 +137,24 @@
 
   <section id="memory-full" class="rank-section"></section>
   <section id="quiz-full" class="rank-section"></section>
+  <button id="back-to-top" onclick="scrollToTop()" style="
+    position:fixed;
+    right:16px;
+    bottom:20px;
+    width:48px;
+    height:48px;
+    border:none;
+    border-radius:999px;
+    background:var(--clr-blue);
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+    cursor:pointer;
+    display:none;
+    z-index:999;
+  ">↑</button>
+
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -295,7 +313,22 @@ async function deleteEntry(id) {
 
   try {
     await deleteLeaderboardEntry(id, adminPw);
-    await loadRankings();
+    await 
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleBackToTop() {
+  const btn = document.getElementById('back-to-top');
+  if (!btn) return;
+  btn.style.display = window.scrollY > 220 ? 'block' : 'none';
+}
+
+window.addEventListener('scroll', toggleBackToTop);
+window.addEventListener('load', toggleBackToTop);
+
+
+loadRankings();
   } catch (err) {
     alert(err.message || 'Löschen fehlgeschlagen.');
   }
