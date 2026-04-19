@@ -5,138 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Ranglisten</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
-<style>
-.rank-hero{
-  margin: 0 0 18px 0;
-}
-.rank-cards{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:16px;
-  margin: 0 0 22px 0;
-}
-.rank-card{
-  border-radius:20px;
-  padding:16px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.08);
-  border:1px solid rgba(0,0,0,0.06);
-  background:#fff;
-}
-.rank-card.memory{
-  background:linear-gradient(180deg,#fff8e1 0%, #ffffff 100%);
-  border-top:6px solid #d4af37;
-}
-.rank-card.quiz{
-  background:linear-gradient(180deg,#eef2ff 0%, #ffffff 100%);
-  border-top:6px solid #4f46e5;
-}
-.rank-card-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:12px;
-}
-.rank-card-title{
-  font-size:20px;
-  font-weight:800;
-  margin:0;
-}
-.rank-card-sub{
-  font-size:13px;
-  color:var(--clr-text-muted);
-  margin:2px 0 0 0;
-}
-.top3-mini{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin:0 0 14px 0;
-}
-.top3-mini-item{
-  text-align:center;
-  border-radius:16px;
-  padding:12px 8px;
-  border:1px solid rgba(0,0,0,0.06);
-  background:rgba(255,255,255,0.75);
-}
-.top3-mini-item.first{
-  transform:translateY(-4px);
-}
-.top3-mini-medal{
-  font-size:22px;
-  margin-bottom:4px;
-}
-.top3-mini-name{
-  font-size:14px;
-  font-weight:800;
-  line-height:1.2;
-  word-break:break-word;
-  margin-bottom:4px;
-}
-.top3-mini-score{
-  font-size:14px;
-  font-weight:800;
-}
-.top3-mini-meta{
-  font-size:11px;
-  color:var(--clr-text-muted);
-  margin-top:2px;
-}
-.rank-section{
-  margin: 0 0 24px 0;
-}
-.rank-section-title{
-  margin:0 0 12px 0;
-  font-size:20px;
-  font-weight:800;
-}
-@media (max-width: 420px){
-  .top3-mini-name{
-    font-size:13px;
-  }
-  .top3-mini-score{
-    font-size:13px;
-  }
-}
-</style>
 </head>
 <body>
 
 <div id="nav-root"></div>
 
 <main class="app-main">
-  <div class="rank-hero">
-    <div class="page-title">🏆 Ranglisten</div>
-    <p class="section-sub">Vergleiche die besten Ergebnisse in Memory und Quiz.</p>
+  <div class="page-title">🏆 Ranglisten</div>
+  <p class="section-sub">Vergleiche die besten Ergebnisse in Memory und Quiz.</p>
+  <div class="rank-tabs">
+    <button class="rank-tab active" id="tab-memory" onclick="showTab('memory')">🃏 Memory</button>
+    <button class="rank-tab" id="tab-quiz" onclick="showTab('quiz')">🧠 Quiz</button>
   </div>
 
-  <div class="rank-cards">
-    <section class="rank-card memory">
-      <div class="rank-card-head">
-        <div>
-          <h2 class="rank-card-title">🃏 Memory</h2>
-          <p class="rank-card-sub">Die besten Ergebnisse mit den wenigsten Zügen</p>
-        </div>
-      </div>
-      <div id="memory-top3"></div>
-      <button class="btn-primary" onclick="scrollToSection('memory-full')">Komplette Memory-Liste ansehen</button>
-    </section>
+  <div id="memory-panel" class="rank-panel"></div>
+  <div id="quiz-panel" class="rank-panel hidden"></div>
+  <button id="back-to-top" onclick="scrollToTop()" style="
+    position:fixed;
+    right:16px;
+    bottom:20px;
+    width:48px;
+    height:48px;
+    border:none;
+    border-radius:999px;
+    background:var(--clr-blue);
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+    cursor:pointer;
+    display:none;
+    z-index:999;
+  ">↑</button>
 
-    <section class="rank-card quiz">
-      <div class="rank-card-head">
-        <div>
-          <h2 class="rank-card-title">🧠 Quiz</h2>
-          <p class="rank-card-sub">Die besten Quizergebnisse nach richtigen Antworten</p>
-        </div>
-      </div>
-      <div id="quiz-top3"></div>
-      <button class="btn-primary" onclick="scrollToSection('quiz-full')">Komplette Quiz-Liste ansehen</button>
-    </section>
-  </div>
-
-  <section id="memory-full" class="rank-section"></section>
-  <section id="quiz-full" class="rank-section"></section>
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -144,13 +45,10 @@
 <script>
 buildNav('rangliste');
 
+
 let leaderboard = [];
 let quizLeaderboard = [];
-
-function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+let activeTab = 'memory';
 
 async function fetchQuizLeaderboard() {
   const res = await fetch(`${API_BASE}/api/quiz/leaderboard`, { cache: 'no-store' });
@@ -158,52 +56,72 @@ async function fetchQuizLeaderboard() {
   return await res.json();
 }
 
+function showTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-memory').classList.toggle('active', tab === 'memory');
+  document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
+  document.getElementById('memory-panel').classList.toggle('hidden', tab !== 'memory');
+  document.getElementById('quiz-panel').classList.toggle('hidden', tab !== 'quiz');
+}
+
+async function loadLeaderboard() {
+  const memoryPanel = document.getElementById('memory-panel');
+  const quizPanel = document.getElementById('quiz-panel');
+
+  memoryPanel.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Memory-Rangliste ...</p>`;
+  quizPanel.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Quiz-Rangliste ...</p>`;
+
+  try {
+    leaderboard = await fetchLeaderboard();
+  } catch (err) {
+    memoryPanel.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Memory-Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
+  }
+
+  try {
+    quizLeaderboard = await fetchQuizLeaderboard();
+  } catch (err) {
+    quizPanel.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Quiz-Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
+  }
+
+  renderMemory();
+  renderQuiz();
+  showTab(activeTab);
+}
+
 function formatPodiumDate(value) {
   if (!value) return '';
   return String(value).split(' ')[0].split('T')[0];
 }
 
-function renderMiniTop3(containerId, data, type) {
-  const myName = getDisplayName();
-  const el = document.getElementById(containerId);
+function buildPodiumCard(player, place, medal, extraClass, myName, scoreLabel, metaLabel) {
+  if (!player) return '';
+  const isYou = player.player_name === myName;
 
-  if (!data.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:10px 0 16px">
-      <div class="empty-state-sub">Noch keine Einträge</div>
-    </div>`;
-    return;
-  }
+  const accent =
+    place === 1 ? '#d4af37' :
+    place === 2 ? '#c0c0c0' :
+    '#cd7f32';
 
-  const medals = ['🥇','🥈','🥉'];
-  const top = data.slice(0, 3);
+  const bg =
+    place === 1 ? 'linear-gradient(180deg, #fff8e1 0%, #ffffff 100%)' :
+    place === 2 ? 'linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%)' :
+    'linear-gradient(180deg, #fff1e8 0%, #ffffff 100%)';
 
-  el.innerHTML = `<div class="top3-mini">
-    ${top.map((p, i) => {
-      const isYou = p.player_name === myName;
-      const score = type === 'memory'
-        ? `${p.score} Züge`
-        : `${p.score}/${p.total}`;
-      const meta = type === 'memory'
-        ? `${p.pairs ?? '-'} Paare`
-        : `${p.total ? Math.round((p.score / p.total) * 100) : 0}% richtig`;
-
-      return `<div class="top3-mini-item ${i === 0 ? 'first' : ''}">
-        <div class="top3-mini-medal">${medals[i]}</div>
-        <div class="top3-mini-name">${escHtml(p.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</div>
-        <div class="top3-mini-score">${score}</div>
-        <div class="top3-mini-meta">${meta}</div>
-      </div>`;
-    }).join('')}
+  return `<div class="podium-card ${extraClass}${isYou ? ' lb-you' : ''}" style="border-top:6px solid ${accent}; background:${bg};">
+    <div class="podium-place">${medal} ${place}</div>
+    <div class="podium-name">${escHtml(player.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</div>
+    <div class="podium-score">${scoreLabel(player)}</div>
+    <div class="podium-meta">${metaLabel(player)}</div>
+    <div class="podium-meta">${escHtml(formatPodiumDate(player.date_label || player.created_at || ''))}</div>
   </div>`;
 }
 
-function renderMemoryFull() {
+function renderMemory() {
   const myName = getDisplayName();
-  const lb = document.getElementById('memory-full');
+  const lb = document.getElementById('memory-panel');
 
   if (!leaderboard.length) {
     lb.innerHTML = `
-      <h2 class="rank-section-title">🃏 Memory – komplette Rangliste</h2>
       <div class="empty-state">
         <span class="empty-state-icon">🃏</span>
         <div class="empty-state-text">Noch keine Einträge</div>
@@ -214,9 +132,16 @@ function renderMemoryFull() {
   }
 
   const medals = ['🥇','🥈','🥉'];
+  const topThree = leaderboard.slice(0, 3);
 
   lb.innerHTML = `
-    <h2 class="rank-section-title">🃏 Memory – komplette Rangliste</h2>
+    <h2 class="top3-title">🏆 Beste Memory-Spieler</h2>
+    <div class="top3-podium">
+      ${buildPodiumCard(topThree[1], 2, '🥈', 'podium-second', myName, p => `${p.score} Züge`, p => `${p.pairs ?? '-'} Paare`)}
+      ${buildPodiumCard(topThree[0], 1, '🥇', 'podium-first', myName, p => `${p.score} Züge`, p => `${p.pairs ?? '-'} Paare`)}
+      ${buildPodiumCard(topThree[2], 3, '🥉', 'podium-third', myName, p => `${p.score} Züge`, p => `${p.pairs ?? '-'} Paare`)}
+    </div>
+
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -238,19 +163,19 @@ function renderMemoryFull() {
         }).join('')}
       </tbody>
     </table>
+
     ${isAdminLoggedIn() ? `
       <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn-danger" onclick="doReset()">Memory-Rangliste leeren</button>
       </div>` : ''}`;
 }
 
-function renderQuizFull() {
+function renderQuiz() {
   const myName = getDisplayName();
-  const lb = document.getElementById('quiz-full');
+  const lb = document.getElementById('quiz-panel');
 
   if (!quizLeaderboard.length) {
     lb.innerHTML = `
-      <h2 class="rank-section-title">🧠 Quiz – komplette Rangliste</h2>
       <div class="empty-state">
         <span class="empty-state-icon">🧠</span>
         <div class="empty-state-text">Noch keine Quiz-Einträge</div>
@@ -261,9 +186,16 @@ function renderQuizFull() {
   }
 
   const medals = ['🥇','🥈','🥉'];
+  const topThree = quizLeaderboard.slice(0, 3);
 
   lb.innerHTML = `
-    <h2 class="rank-section-title">🧠 Quiz – komplette Rangliste</h2>
+    <h2 class="top3-title">🏆 Beste Quiz-Spieler</h2>
+    <div class="top3-podium">
+      ${buildPodiumCard(topThree[1], 2, '🥈', 'podium-second', myName, p => `${p.score}/${p.total}`, p => `${Math.round((p.score / p.total) * 100)}% richtig`)}
+      ${buildPodiumCard(topThree[0], 1, '🥇', 'podium-first', myName, p => `${p.score}/${p.total}`, p => `${Math.round((p.score / p.total) * 100)}% richtig`)}
+      ${buildPodiumCard(topThree[2], 3, '🥉', 'podium-third', myName, p => `${p.score}/${p.total}`, p => `${Math.round((p.score / p.total) * 100)}% richtig`)}
+    </div>
+
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -280,7 +212,7 @@ function renderQuizFull() {
             <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
             <td class="lb-score">${s.score}/${s.total}</td>
             <td style="color:var(--clr-text-muted);font-size:12px">${percent}%</td>
-            <td class="lb-time">${escHtml(formatPodiumDate(s.created_at) || s.created_at || '')}</td>
+            <td class="lb-time">${escHtml(formatDateLabel(s.created_at) || s.created_at || '')}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -295,58 +227,44 @@ async function deleteEntry(id) {
 
   try {
     await deleteLeaderboardEntry(id, adminPw);
-    await loadRankings();
+    await loadLeaderboard();
   } catch (err) {
     alert(err.message || 'Löschen fehlgeschlagen.');
   }
 }
 
 async function doReset() {
-  if (!confirm('Memory-Rangliste wirklich leeren?')) return;
+  if (!confirm('Rangliste wirklich leeren?')) return;
 
   const adminPw = prompt('Admin-Passwort eingeben:');
   if (!adminPw) return;
 
   try {
     await clearScores(adminPw);
-    await loadRankings();
+    await loadLeaderboard();
   } catch (err) {
     alert(err.message || 'Zurücksetzen fehlgeschlagen.');
   }
 }
 
-async function loadRankings() {
-  const memoryFull = document.getElementById('memory-full');
-  const quizFull = document.getElementById('quiz-full');
-  const memoryTop = document.getElementById('memory-top3');
-  const quizTop = document.getElementById('quiz-top3');
-
-  memoryTop.innerHTML = `<div style="font-size:13px;color:var(--clr-text-muted)">Lade ...</div>`;
-  quizTop.innerHTML = `<div style="font-size:13px;color:var(--clr-text-muted)">Lade ...</div>`;
-  memoryFull.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Memory-Rangliste ...</p>`;
-  quizFull.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Quiz-Rangliste ...</p>`;
-
-  try {
-    leaderboard = await fetchLeaderboard();
+loadLeaderboard();
+loadLeaderboard();
   } catch (err) {
-    leaderboard = [];
-    memoryFull.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Memory-Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
+    alert(err.message || 'Löschen fehlgeschlagen.');
   }
-
-  try {
-    quizLeaderboard = await fetchQuizLeaderboard();
-  } catch (err) {
-    quizLeaderboard = [];
-    quizFull.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Quiz-Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
-  }
-
-  renderMiniTop3('memory-top3', leaderboard, 'memory');
-  renderMiniTop3('quiz-top3', quizLeaderboard, 'quiz');
-  renderMemoryFull();
-  renderQuizFull();
 }
 
-loadRankings();
+async function doReset() {
+  if (!confirm('Rangliste wirklich leeren?')) return;
+  try {
+    await clearScores();
+    await loadLeaderboard();
+  } catch (err) {
+    alert(err.message || 'Zurücksetzen fehlgeschlagen.');
+  }
+}
+
+loadLeaderboard();
 </script>
 </body>
 </html>
