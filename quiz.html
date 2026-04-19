@@ -122,6 +122,10 @@ function renderQuiz() {
     const pct = Math.round(score / questions.length * 100);
     const em  = pct >= 80 ? '🏆' : pct >= 50 ? '😊' : '🐐';
     const msg = pct >= 80 ? 'Ziegenexperte!' : pct >= 50 ? 'Gut gemacht!' : 'Übe weiter!';
+
+    // Ergebnis speichern
+    saveQuizResult(score, questions.length);
+
     qb.innerHTML = `
       <div class="quiz-score">
         <span class="quiz-score-emoji">${em}</span>
@@ -176,6 +180,27 @@ function nextQ() {
   quizState.idx++;
   quizState.answered = false;
   renderQuiz();
+}
+
+
+async function saveQuizResult(score, total) {
+  try {
+    const name = getDisplayName();
+    if (!name) return;
+
+    await fetch(`${API_BASE}/api/quiz/leaderboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player_name: name,
+        score: score,
+        total: total
+      })
+    });
+
+  } catch (e) {
+    console.warn('Quiz-Ergebnis konnte nicht gespeichert werden', e);
+  }
 }
 
 ensureConfirmedPlayerName();
