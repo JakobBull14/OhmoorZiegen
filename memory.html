@@ -43,6 +43,42 @@ function showName() {
   document.getElementById('name-display').textContent = getDisplayName();
 }
 
+function askForPlayerName() {
+  let validName = null;
+
+  while (!validName) {
+    const input = prompt(
+`Wähle deinen Spielernamen
+
+Gib den Namen ein, unter dem dich andere an der Schule erkennen (z. B. dein Vorname).
+Wenn du die App auf einem anderen Gerät nutzt, verwende bitte denselben Namen wie zuvor.
+Sollte dein Name schon vergeben sein, füge eine Zahl oder deine Klasse hinzu (z. B. 6B).
+Bitte keine Fantasienamen oder unangemessenen Namen – solche Namen können gelöscht werden.`,
+      getDisplayName() || ''
+    );
+
+    if (!input) continue;
+
+    const valid = validatePlayerName(input);
+    if (valid.ok) {
+      validName = valid.name;
+    } else {
+      alert(valid.error);
+    }
+  }
+
+  setDisplayName(validName);
+  localStorage.setItem('goat_name_confirmed', '1');
+  showName();
+}
+
+function ensureConfirmedPlayerName() {
+  const confirmed = localStorage.getItem('goat_name_confirmed') === '1';
+  if (!confirmed) {
+    askForPlayerName();
+  }
+}
+
 function changeName() {
   const n = prompt('Dein Name für die Rangliste:', getDisplayName());
   if (!n) return;
@@ -52,34 +88,8 @@ function changeName() {
     return;
   }
   setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed', '1');
   showName();
-
-async function ensureName() {
-  let name = getDisplayName();
-  if (!name || name.trim() === '' || name === 'Spieler') {
-    let validName = null;
-    while (!validName) {
-      const input = prompt(
-`Wähle deinen Spielernamen
-
-Gib den Namen ein, unter dem dich andere an der Schule erkennen (z. B. dein Vorname).
-Wenn du die App auf einem anderen Gerät nutzt, verwende bitte denselben Namen wie zuvor.
-Sollte dein Name schon vergeben sein, füge eine Zahl oder deine Klasse hinzu (z. B. 6B).
-Bitte keine Fantasienamen oder unangemessenen Namen – solche Namen können gelöscht werden.`
-      );
-      if (!input) continue;
-      const valid = validatePlayerName(input);
-      if (valid.ok) {
-        validName = valid.name;
-      } else {
-        alert(valid.error);
-      }
-    }
-    setDisplayName(validName);
-    showName();
-  }
-}
-
 }
 
 function startMemory() {
@@ -200,35 +210,8 @@ async function gameWon() {
 
 showName();
 
-async function ensureName() {
-  let name = getDisplayName();
-  if (!name || name.trim() === '' || name === 'Spieler') {
-    let validName = null;
-    while (!validName) {
-      const input = prompt(
-`Wähle deinen Spielernamen
-
-Gib den Namen ein, unter dem dich andere an der Schule erkennen (z. B. dein Vorname).
-Wenn du die App auf einem anderen Gerät nutzt, verwende bitte denselben Namen wie zuvor.
-Sollte dein Name schon vergeben sein, füge eine Zahl oder deine Klasse hinzu (z. B. 6B).
-Bitte keine Fantasienamen oder unangemessenen Namen – solche Namen können gelöscht werden.`
-      );
-      if (!input) continue;
-      const valid = validatePlayerName(input);
-      if (valid.ok) {
-        validName = valid.name;
-      } else {
-        alert(valid.error);
-      }
-    }
-    setDisplayName(validName);
-    showName();
-  }
-}
-
-
 (async () => {
-  await ensureName();
+  ensureConfirmedPlayerName();
   await loadGoats();
   startMemory();
 })();
