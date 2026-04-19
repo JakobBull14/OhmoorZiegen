@@ -38,6 +38,36 @@ async function loadGoats() {
 let memState = null;
 let cfg = getMemConfig();
 
+const NAME_BLACKLIST = [
+  'idiot', 'idiotin', 'dumm', 'doof', 'blöd', 'stupid',
+  'arsch', 'scheisse', 'scheiße', 'fuck', 'fick', 'porno',
+  'sex', 'hurensohn', 'bitch', 'nazi', 'hitler'
+];
+
+function validatePlayerName(n) {
+  const name = (n || '').trim().replace(/\s+/g, ' ');
+
+  if (name.length < 2) {
+    return { ok: false, error: 'Bitte gib mindestens 2 Zeichen ein.' };
+  }
+
+  if (name.length > 20) {
+    return { ok: false, error: 'Bitte verwende höchstens 20 Zeichen.' };
+  }
+
+  if (/^\d+$/.test(name)) {
+    return { ok: false, error: 'Bitte verwende nicht nur Zahlen.' };
+  }
+
+  const lower = name.toLowerCase();
+  if (NAME_BLACKLIST.some(word => lower.includes(word))) {
+    return { ok: false, error: 'Dieser Name ist hier nicht erlaubt. Bitte wähle einen anderen Namen.' };
+  }
+
+  return { ok: true, name };
+}
+
+
 // Spieler-Name anzeigen
 function showName() {
   document.getElementById('name-display').textContent = getDisplayName();
