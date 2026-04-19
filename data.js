@@ -202,17 +202,23 @@ async function saveScore(username, moves, pairs) {
   return data;
 }
 
-async function clearScores() {
+async function clearScores(adminPassword) {
   const res = await fetch(`${API_BASE}/api/admin/leaderboard/reset`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': adminPassword
+    }
   });
   if (!res.ok) throw new Error(`Reset API ${res.status}`);
 }
 
-async function deleteLeaderboardEntry(id) {
+async function deleteLeaderboardEntry(id, adminPassword) {
   const res = await fetch(`${API_BASE}/api/admin/leaderboard/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+      'X-Admin-Password': adminPassword
+    }
   });
   if (!res.ok) throw new Error(`Delete API ${res.status}`);
 }
