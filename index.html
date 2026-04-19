@@ -54,6 +54,15 @@ async function initPage() {
     goats = getGoats();
   }
   filtered = [...goats];
+  try {
+    const voteResults = await fetchVoteResults();
+    const voteMap = {};
+    voteResults.forEach(v => voteMap[v.goat_id] = v.votes);
+    goats = goats.map(g => ({ ...g, votes: voteMap[g.id] || 0 }));
+    filtered = [...goats];
+  } catch(e) {
+    console.warn('Votes konnten nicht geladen werden', e);
+  }
   renderGallery();
 }
 
@@ -93,7 +102,8 @@ function renderGallery() {
         : `<span style="font-size:3.5rem">${g.e}</span>`;
     const cnt = g.photos && g.photos.length > 1
       ? `<div class="gc-photo-count">📷 ${g.photos.length}</div>` : '';
-    const vt = `<div class="gc-badge">❤️ ${g.votes || 0}</div>`;
+    const vt  = g.votes > 0
+      ? `<div class="gc-badge">♡ ${g.votes}</div>` : '';
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
       <div class="goat-card-image">${ph}${cnt}${vt}</div>
