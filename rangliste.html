@@ -191,8 +191,12 @@ function render() {
 
 async function deleteEntry(id) {
   if (!confirm('Diesen Ranglisten-Eintrag wirklich löschen?')) return;
+
+  const adminPw = prompt('Admin-Passwort eingeben:');
+  if (!adminPw) return;
+
   try {
-    await deleteLeaderboardEntry(id);
+    await deleteLeaderboardEntry(id, adminPw);
     await loadLeaderboard();
   } catch (err) {
     alert(err.message || 'Löschen fehlgeschlagen.');
@@ -201,8 +205,12 @@ async function deleteEntry(id) {
 
 async function doReset() {
   if (!confirm('Rangliste wirklich leeren?')) return;
+
+  const adminPw = prompt('Admin-Passwort eingeben:');
+  if (!adminPw) return;
+
   try {
-    await clearScores();
+    await clearScores(adminPw);
     await loadLeaderboard();
   } catch (err) {
     alert(err.message || 'Zurücksetzen fehlgeschlagen.');
