@@ -447,3 +447,51 @@ async function adminDeleteQuizQuestion(id, adminPassword) {
     headers: { 'X-Admin-Password': adminPassword }
   });
 }
+
+async function adminAddGoat(goat, adminPassword) {
+  return await apiRequest('/api/admin/goats', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(goat)
+  });
+}
+
+async function adminDeleteGoat(id, adminPassword) {
+  return await apiRequest(`/api/admin/goats/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminResetVotes(adminPassword) {
+  return await apiRequest('/api/admin/votes/reset', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminResetLeaderboard(adminPassword) {
+  return await apiRequest('/api/admin/leaderboard/reset', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminAddGoatImage(goatId, imageUrl, caption, adminPassword) {
+  return await apiRequest('/api/admin/goat-images', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify({
+      goat_id: goatId,
+      image_url: imageUrl,
+      caption: caption || ''
+    })
+  });
+}
+
+async function adminDeleteGoatImage(imageId, adminPassword) {
+  return await apiRequest(`/api/admin/goat-images/${imageId}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
