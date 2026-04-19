@@ -53,16 +53,41 @@ async function initPage() {
     console.error('API-Laden fehlgeschlagen, nutze lokalen Fallback.', e);
     goats = getGoats();
   }
-  filtered = [...goats];
+
   try {
-    const voteResults = await fetchVoteResults();
+    const rawVoteResults = await fetchVoteResults();
     const voteMap = {};
-    voteResults.forEach(v => voteMap[v.goat_id] = v.votes);
+
+    if (Array.isArray(rawVoteResults)) {
+      rawVoteResults.forEach(item => {
+        const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
+        const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+        if (goatId) voteMap[goatId] = votes;
+      });
+    } else if (rawVoteResults && typeof rawVoteResults === 'object') {
+      const list = Array.isArray(rawVoteResults.results) ? rawVoteResults.results : null;
+
+      if (list) {
+        list.forEach(item => {
+          const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
+          const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+          if (goatId) voteMap[goatId] = votes;
+        });
+      } else {
+        Object.entries(rawVoteResults).forEach(([key, value]) => {
+          const goatId = Number(key);
+          const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
+          if (goatId) voteMap[goatId] = votes;
+        });
+      }
+    }
+
     goats = goats.map(g => ({ ...g, votes: voteMap[g.id] || 0 }));
-    filtered = [...goats];
-  } catch(e) {
-    console.warn('Votes konnten nicht geladen werden', e);
+  } catch (e) {
+    console.warn('Vote-Ergebnisse konnten nicht geladen werden.', e);
   }
+
+  filtered = [...goats];
   renderGallery();
 }
 
@@ -93,17 +118,33 @@ function renderGallery() {
     ? `${goats.length} Ziegen`
     : `${filtered.length} von ${goats.length} Ziegen`;
 
+  const goatsWithVotes = goats
+    .filter(g => Number(g.votes || 0) > 0)
+    .sort((a, b) => Number(b.votes || 0) - Number(a.votes || 0));
+
+  const showRanking = goatsWithVotes.length >= 3;
+  const topIds = showRanking ? goatsWithVotes.slice(0, 3).map(g => g.id) : [];
+
+  function getRankIcon(goatId) {
+    const pos = topIds.indexOf(goatId);
+    if (pos === 0) return '🥇 ';
+    if (pos === 1) return '🥈 ';
+    if (pos === 2) return '🥉 ';
+    return '';
+  }
+
   grid.innerHTML = filtered.map(g => {
-    // Foto: hochgeladen → bilder/-Ordner → Emoji
     const ph = (g.photos && g.photos.length)
       ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
       : g.foto
         ? `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'"><span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
         : `<span style="font-size:3.5rem">${g.e}</span>`;
+
     const cnt = g.photos && g.photos.length > 1
       ? `<div class="gc-photo-count">📷 ${g.photos.length}</div>` : '';
-    const vt  = g.votes > 0
-      ? `<div class="gc-badge">♡ ${g.votes}</div>` : '';
+
+    const rankIcon = showRanking ? getRankIcon(g.id) : '';
+    const vt = `<div class="gc-badge">${rankIcon}❤️ ${Number(g.votes || 0)}</div>`;
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
       <div class="goat-card-image">${ph}${cnt}${vt}</div>
