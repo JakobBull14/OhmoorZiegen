@@ -115,7 +115,18 @@ function formatPodiumDate(value) {
 function buildPodiumCard(player, place, medal, extraClass, myName) {
   if (!player) return '';
   const isYou = player.player_name === myName;
-  return `<div class="podium-card ${extraClass}${isYou ? ' lb-you' : ''}">
+
+  const accent =
+    place === 1 ? '#d4af37' :
+    place === 2 ? '#c0c0c0' :
+    '#cd7f32';
+
+  const bg =
+    place === 1 ? 'linear-gradient(180deg, #fff8e1 0%, #ffffff 100%)' :
+    place === 2 ? 'linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%)' :
+    'linear-gradient(180deg, #fff1e8 0%, #ffffff 100%)';
+
+  return `<div class="podium-card ${extraClass}${isYou ? ' lb-you' : ''}" style="border-top:6px solid ${accent}; background:${bg};">
     <div class="podium-place">${medal} ${place}</div>
     <div class="podium-name">${escHtml(player.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</div>
     <div class="podium-score">${player.score} Züge</div>
