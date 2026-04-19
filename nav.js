@@ -15,7 +15,6 @@ function buildNav(activePage) {
 
   const pages = [
     { id:'gallery',    href:'/OhmoorZiegen/index.html',      icon:'🐐', label:'Ziegen'    },
-    { id:'stammbaum', href:'/OhmoorZiegen/stammbaum.html',   icon:'🌳', label:'Stammbaum' },
     { id:'monat',     href:'/OhmoorZiegen/monat.html',       icon:'⭐', label:'Monat'     },
     { id:'quiz',      href:'/OhmoorZiegen/quiz.html',        icon:'🧠', label:'Quiz'      },
     { id:'memory',    href:'/OhmoorZiegen/memory.html',      icon:'🃏', label:'Memory'    },
