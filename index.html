@@ -23,12 +23,7 @@
 
   <div id="player-count" style="margin:10px 0 6px 0;font-size:14px;color:var(--clr-text-muted)"></div>
 
-  <!-- Ziege des Monats -->
-  <div id="goat-of-month" style="margin:16px 0;padding:16px;border-radius:12px;background:#fff7e6;border:1px solid #f0d58a;display:none">
-    <div style="font-weight:bold;font-size:16px;margin-bottom:8px">🐐 Ziege des Monats</div>
-    <div id="goat-of-month-content"></div>
-  </div>
-<!-- Suchfeld (Mobil) -->
+  <!-- Suchfeld (Mobil) -->
   <div style="position:relative;margin-bottom:16px">
     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:16px;pointer-events:none">🔍</span>
     <input type="text" id="srch"
@@ -53,19 +48,23 @@ buildNav('gallery');
 let goats = [];
 let filtered = [];
 
-
 async function loadPlayerCount() {
   try {
     const lb = await fetchLeaderboard();
     const names = new Set();
-    (lb || []).forEach(e => {
-      if (e && e.player_name) names.add(String(e.player_name).toLowerCase().trim());
+    (lb || []).forEach(entry => {
+      if (entry && entry.player_name) {
+        names.add(String(entry.player_name).trim().toLowerCase());
+      }
     });
+
     const el = document.getElementById('player-count');
-    const n = names.size || 0;
-    el.innerHTML = `👥 <strong>${n}</strong> Spieler machen schon mit`;
+    if (!el) return;
+
+    const count = names.size || 0;
+    el.innerHTML = `👥 <strong>${count}</strong> Spieler machen schon mit`;
   } catch (e) {
-    console.warn('Player count konnte nicht geladen werden', e);
+    console.warn('Spielerzahl konnte nicht geladen werden.', e);
   }
 }
 
@@ -124,7 +123,6 @@ function onSearch() {
         g.character.toLowerCase().includes(q))
     : [...goats];
   renderGallery();
-  await loadPlayerCount();
 }
 
 function renderGallery() {
@@ -156,27 +154,6 @@ function renderGallery() {
     if (pos === 1) return '🥈 ';
     if (pos === 2) return '🥉 ';
     return '';
-  }
-
-
-  // Ziege des Monats bestimmen
-  if (goatsWithVotes.length > 0) {
-    const top = goatsWithVotes[0];
-    const container = document.getElementById('goat-of-month');
-    const content = document.getElementById('goat-of-month-content');
-
-    container.style.display = 'block';
-    content.innerHTML = `
-      <a href="/OhmoorZiegen/ziege.html?id=${top.id}" style="text-decoration:none;color:inherit">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-size:40px">${top.e}</div>
-          <div>
-            <div style="font-weight:bold">${top.name}</div>
-            <div style="font-size:13px;color:#666">❤️ ${top.votes} Stimmen</div>
-          </div>
-        </div>
-      </a>
-    `;
   }
 
   grid.innerHTML = filtered.map(g => {
