@@ -21,7 +21,8 @@
     <span class="hero-bar-emoji">🌿</span>
   </div>
 
-  
+  <div id="player-count" style="margin:10px 0 6px 0;font-size:14px;color:var(--clr-text-muted)"></div>
+
   <!-- Ziege des Monats -->
   <div id="goat-of-month" style="margin:16px 0;padding:16px;border-radius:12px;background:#fff7e6;border:1px solid #f0d58a;display:none">
     <div style="font-weight:bold;font-size:16px;margin-bottom:8px">🐐 Ziege des Monats</div>
@@ -51,6 +52,22 @@ buildNav('gallery');
 
 let goats = [];
 let filtered = [];
+
+
+async function loadPlayerCount() {
+  try {
+    const lb = await fetchLeaderboard();
+    const names = new Set();
+    (lb || []).forEach(e => {
+      if (e && e.player_name) names.add(String(e.player_name).toLowerCase().trim());
+    });
+    const el = document.getElementById('player-count');
+    const n = names.size || 0;
+    el.innerHTML = `👥 <strong>${n}</strong> Spieler machen schon mit`;
+  } catch (e) {
+    console.warn('Player count konnte nicht geladen werden', e);
+  }
+}
 
 async function initPage() {
   try {
@@ -95,6 +112,7 @@ async function initPage() {
 
   filtered = [...goats];
   renderGallery();
+  await loadPlayerCount();
 }
 
 function onSearch() {
@@ -106,6 +124,7 @@ function onSearch() {
         g.character.toLowerCase().includes(q))
     : [...goats];
   renderGallery();
+  await loadPlayerCount();
 }
 
 function renderGallery() {
