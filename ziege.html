@@ -92,12 +92,7 @@ function renderPage() {
 
       ${photoHtml}
 
-      ${isAdmin ? `
-      <div style="padding:10px 16px;background:var(--clr-bg-subtle);border-bottom:1px solid var(--clr-border-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--clr-text-muted)">🔐 Admin: Fotos verwalten</span>
-        <input type="file" id="file-inp" accept="image/*" multiple style="display:none" onchange="handleUpload(event)">
-        <button class="btn-secondary" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('file-inp').click()">📷 Foto hochladen</button>
-        ${goat.photos && goat.photos.length ? `<button class="btn-danger" style="font-size:12px;padding:5px 12px" onclick="deleteCurrentPhoto()">🗑️ Dieses Foto löschen</button>` : ''}
+      
       </div>` : ''}
 
       <div class="detail-body">
@@ -136,7 +131,7 @@ function renderPage() {
           <div class="detail-field-value" id="f-story" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'story\',this)"' : ''}>${goat.story}</div>
         </div>
 
-        ${isAdmin ? `<div style="margin-top:12px;font-size:12px;color:var(--clr-blue)">✏️ Als Admin kannst du alle Texte direkt anklicken und bearbeiten.</div>` : ''}
+        
       </div>
 
       <div class="detail-nav">
@@ -153,20 +148,7 @@ function renderPage() {
       </div>
     </div>`;
 
-  // Admin-Felder stylen
-  if (isAdmin) {
-    document.querySelectorAll('[contenteditable=true]').forEach(el => {
-      el.style.cssText = 'border:1px solid var(--clr-border);border-radius:var(--radius-sm);padding:4px 6px;background:var(--clr-bg-subtle);cursor:text;outline:none';
-      el.addEventListener('focus', () => el.style.borderColor = 'var(--clr-blue)');
-      el.addEventListener('blur',  () => el.style.borderColor = 'var(--clr-border)');
-    });
   }
-
-  // Foto-Navigation init
-  if (goat.photos && goat.photos.length > 1) {
-    updatePhNav();
-  }
-}
 
 // ── Foto-Karussel ──
 let phIdx = 0;
