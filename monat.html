@@ -52,9 +52,41 @@ function render() {
     return;
   }
 
+  const voteMap = {};
+
+  if (Array.isArray(voteResults)) {
+    voteResults.forEach(item => {
+      const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
+      const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+      if (goatId) voteMap[goatId] = votes;
+    });
+  } else if (voteResults && typeof voteResults === 'object') {
+    const list = Array.isArray(voteResults.results) ? voteResults.results : null;
+
+    if (list) {
+      list.forEach(item => {
+        const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
+        const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+        if (goatId) voteMap[goatId] = votes;
+      });
+    } else if (voteResults.counts && typeof voteResults.counts === 'object') {
+      Object.entries(voteResults.counts).forEach(([key, value]) => {
+        const goatId = Number(key);
+        const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
+        if (goatId) voteMap[goatId] = votes;
+      });
+    } else {
+      Object.entries(voteResults).forEach(([key, value]) => {
+        const goatId = Number(key);
+        const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
+        if (goatId) voteMap[goatId] = votes;
+      });
+    }
+  }
+
   const enriched = goats.map(g => ({
     ...g,
-    votes: Number(voteResults.counts?.[String(g.id)] || voteResults.counts?.[g.id] || 0)
+    votes: Number(voteMap[g.id] || 0)
   }));
 
   const sorted = [...enriched].sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'de'));
@@ -86,30 +118,10 @@ function render() {
           ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
           : `<span style="font-size:18px">${g.e}</span>`;
         const pct = total > 0 ? Math.round(g.votes / total * 100) : 0;
-        const rankStyle = sorted.length >= 3
-          ? (g.id === sorted[0].id
-              ? 'background:linear-gradient(90deg, rgba(212,175,55,0.22), rgba(212,175,55,0.06));border:1px solid rgba(212,175,55,0.45);box-shadow:0 6px 16px rgba(212,175,55,0.16);'
-              : g.id === sorted[1].id
-                ? 'background:linear-gradient(90deg, rgba(192,192,192,0.22), rgba(192,192,192,0.06));border:1px solid rgba(160,160,160,0.4);box-shadow:0 6px 16px rgba(160,160,160,0.14);'
-                : g.id === sorted[2].id
-                  ? 'background:linear-gradient(90deg, rgba(205,127,50,0.22), rgba(205,127,50,0.06));border:1px solid rgba(205,127,50,0.42);box-shadow:0 6px 16px rgba(205,127,50,0.14);'
-                  : '')
-          : '';
-
-        const fillStyle = sorted.length >= 3
-          ? (g.id === sorted[0].id
-              ? 'background:linear-gradient(90deg, #d4af37, #f3d46b);'
-              : g.id === sorted[1].id
-                ? 'background:linear-gradient(90deg, #aeb4bc, #d9dde2);'
-                : g.id === sorted[2].id
-                  ? 'background:linear-gradient(90deg, #c27a42, #e0a06f);'
-                  : '')
-          : '';
-
-        return `<div class="vote-row" style="${rankStyle}">
+        return `<div class="vote-row">
           ${ph}
           <a href="/OhmoorZiegen/ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${g.name}</a>
-          <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%;${fillStyle}"></div></div>
+          <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%"></div></div>
           <span class="vote-row-count">♥ ${g.votes}</span>
           ${Number(votedId) === Number(g.id)
             ? `<button class="vote-btn" style="padding:5px 12px;font-size:12px" onclick="doVote(${g.id})">Deine Wahl</button>`
