@@ -5,6 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Ranglisten</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
+
+<style>
+.rank-cards{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin-bottom:20px;
+}
+.rank-card{
+  padding:16px;
+  border-radius:16px;
+  background:var(--clr-bg-subtle);
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+.memory-card{border-top:6px solid #d4af37;}
+.quiz-card{border-top:6px solid #4f46e5;}
+.rank-card h2{
+  margin-bottom:10px;
+}
+.top3-small{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:12px;
+}
+.top3-item{
+  flex:1;
+  text-align:center;
+  font-size:12px;
+}
+</style>
+
 </head>
 <body>
 
@@ -13,19 +45,56 @@
 <main class="app-main">
   <div class="page-title">🏆 Ranglisten</div>
   <p class="section-sub">Vergleiche die besten Ergebnisse in Memory und Quiz.</p>
-  <div class="rank-tabs">
-    <button class="rank-tab active" id="tab-memory" onclick="showTab('memory')">🃏 Memory</button>
-    <button class="rank-tab" id="tab-quiz" onclick="showTab('quiz')">🧠 Quiz</button>
+  
+  <div class="rank-cards">
+
+    <div class="rank-card memory-card">
+      <h2>🃏 Memory</h2>
+      <div id="memory-top3"></div>
+      <button class="btn-primary" onclick="scrollToSection('memory-full')">Komplette Liste ansehen</button>
+    </div>
+
+    <div class="rank-card quiz-card">
+      <h2>🧠 Quiz</h2>
+      <div id="quiz-top3"></div>
+      <button class="btn-primary" onclick="scrollToSection('quiz-full')">Komplette Liste ansehen</button>
+    </div>
+
   </div>
 
-  <div id="memory-panel" class="rank-panel"></div>
-  <div id="quiz-panel" class="rank-panel hidden"></div>
+  <div id="memory-full"></div>
+  <div id="quiz-full"></div>
+
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
 <script src="/OhmoorZiegen/nav.js"></script>
 <script>
 buildNav('rangliste');
+
+function scrollToSection(id){
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+}
+
+function renderTop3Preview(containerId, data, type){
+  const el = document.getElementById(containerId);
+  if(!data.length){
+    el.innerHTML = "<div style='font-size:12px;color:var(--clr-text-muted)'>Noch keine Einträge</div>";
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = `<div class="top3-small">
+    ${data.slice(0,3).map((p,i)=>{
+      const label = type==='memory' ? p.score+" Züge" : p.score+"/"+p.total;
+      return `<div class="top3-item">
+        <div>${medals[i]}</div>
+        <div>${escHtml(p.player_name)}</div>
+        <div>${label}</div>
+      </div>`
+    }).join('')}
+  </div>`;
+}
+
 
 
 let leaderboard = [];
@@ -65,9 +134,13 @@ async function loadLeaderboard() {
     quizPanel.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Quiz-Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
   }
 
-  renderMemory();
-  renderQuiz();
-  showTab(activeTab);
+  
+renderTop3Preview('memory-top3', leaderboard, 'memory');
+renderTop3Preview('quiz-top3', quizLeaderboard, 'quiz');
+
+renderMemoryFull();
+renderQuizFull();
+
 }
 
 function formatPodiumDate(value) {
@@ -98,9 +171,9 @@ function buildPodiumCard(player, place, medal, extraClass, myName, scoreLabel, m
   </div>`;
 }
 
-function renderMemory() {
+function renderMemoryFull() {
   const myName = getDisplayName();
-  const lb = document.getElementById('memory-panel');
+  const lb = document.getElementById('memory-full');
 
   if (!leaderboard.length) {
     lb.innerHTML = `
@@ -152,9 +225,9 @@ function renderMemory() {
       </div>` : ''}`;
 }
 
-function renderQuiz() {
+function renderQuizFull() {
   const myName = getDisplayName();
-  const lb = document.getElementById('quiz-panel');
+  const lb = document.getElementById('quiz-full');
 
   if (!quizLeaderboard.length) {
     lb.innerHTML = `
