@@ -3,213 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Schulziegen – Rangliste</title>
+<title>Schulziegen – Ziege</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
-
-<style>
-.top3-title{
-  margin: 0 0 12px 0;
-  font-size: 20px;
-  font-weight: 800;
-}
-.top3-podium{
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:12px;
-  margin: 0 0 20px 0;
-  flex-wrap:nowrap;
-}
-.podium-card{
-  flex:1;
-  max-width:180px;
-  min-width:0;
-  border-radius:18px;
-  padding:14px 12px;
-  text-align:center;
-  box-shadow:0 8px 24px rgba(0,0,0,0.08);
-  border:2px solid rgba(0,0,0,0.06);
-  background:#fff;
-}
-.podium-card .podium-place{
-  font-size:22px;
-  font-weight:800;
-  margin-bottom:6px;
-}
-.podium-card .podium-name{
-  font-size:16px;
-  font-weight:800;
-  margin-bottom:6px;
-  word-break:break-word;
-}
-.podium-card .podium-score{
-  font-size:20px;
-  font-weight:900;
-  margin-bottom:4px;
-}
-.podium-card .podium-meta{
-  font-size:12px;
-  color:var(--clr-text-muted);
-  line-height:1.4;
-}
-.podium-first{
-  min-height:188px;
-  padding-top:18px;
-  padding-bottom:18px;
-}
-.podium-second,
-.podium-third{
-  min-height:164px;
-}
-@media (max-width: 700px){
-  .top3-podium{
-    gap:8px;
-  }
-  .podium-card{
-    padding:12px 8px;
-  }
-  .podium-card .podium-name{
-    font-size:14px;
-  }
-  .podium-card .podium-score{
-    font-size:18px;
-  }
-}
-</style>
-
 </head>
 <body>
 
 <div id="nav-root"></div>
 
 <main class="app-main">
-  <div class="page-title">🏆 Rangliste – Memory</div>
-  <p class="section-sub">Die besten Ergebnisse aller Spieler. Wenigste Züge gewinnt!</p>
-  <div id="lb-body"></div>
+  <a class="detail-back" href="/OhmoorZiegen/index.html">← Zurück zur Übersicht</a>
+  <div id="page-body"></div>
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
 <script src="/OhmoorZiegen/nav.js"></script>
 <script>
-buildNav('rangliste');
+buildNav('gallery');
 
-let leaderboard = [];
+// ID aus URL lesen
+const params = new URLSearchParams(location.search);
+const goatId = parseInt(params.get('id'));
+let goats = [];
+let goat = null;
+let goatIdx = -1;
 
-async function loadLeaderboard() {
-  const lb = document.getElementById('lb-body');
-  lb.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Rangliste ...</p>`;
+initPage();
+
+async function initPage() {
   try {
-    leaderboard = await fetchLeaderboard();
-    render();
-  } catch (err) {
-    lb.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Rangliste konnte nicht geladen werden</div><div class="empty-state-sub">${escHtml(err.message || 'Unbekannter Fehler')}</div></div>`;
+    goats = await getGoatsFromApi();
+  } catch (e) {
+    console.error('API-Laden fehlgeschlagen, nutze lokalen Fallback.', e);
+    goats = getGoats();
   }
-}
 
+  goat = goats.find(g => g.id === goatId);
+  goatIdx = goats.findIndex(g => g.id === goatId);
 
-function formatPodiumDate(value) {
-  if (!value) return '';
-  return String(value).split(' ')[0].split('T')[0];
-}
-
-function buildPodiumCard(player, place, medal, extraClass, myName) {
-  if (!player) return '';
-  const isYou = player.player_name === myName;
-
-  const accent =
-    place === 1 ? '#d4af37' :
-    place === 2 ? '#c0c0c0' :
-    '#cd7f32';
-
-  const bg =
-    place === 1 ? 'linear-gradient(180deg, #fff8e1 0%, #ffffff 100%)' :
-    place === 2 ? 'linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%)' :
-    'linear-gradient(180deg, #fff1e8 0%, #ffffff 100%)';
-
-  return `<div class="podium-card ${extraClass}${isYou ? ' lb-you' : ''}" style="border-top:6px solid ${accent}; background:${bg};">
-    <div class="podium-place">${medal} ${place}</div>
-    <div class="podium-name">${escHtml(player.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</div>
-    <div class="podium-score">${player.score} Züge</div>
-    <div class="podium-meta">${player.pairs ?? '-'} Paare</div>
-    <div class="podium-meta">${escHtml(formatPodiumDate(player.date_label || player.created_at || ''))}</div>
-  </div>`;
-}
-
-function render() {
-  const myName = getDisplayName();
-  const lb = document.getElementById('lb-body');
-
-  if (!leaderboard.length) {
-    lb.innerHTML = `
+  if (!goat) {
+    document.getElementById('page-body').innerHTML = `
       <div class="empty-state">
-        <span class="empty-state-icon">🃏</span>
-        <div class="empty-state-text">Noch keine Einträge</div>
-        <div class="empty-state-sub">Spiele Memory und komm in die Rangliste!</div>
-        <a href="/OhmoorZiegen/memory.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Memory spielen</a>
+        <span class="empty-state-icon">🤷</span>
+        <div class="empty-state-text">Ziege nicht gefunden</div>
+        <a href="/OhmoorZiegen/index.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Zur Galerie</a>
       </div>`;
     return;
   }
 
-  const medals = ['🥇','🥈','🥉'];
-  const topThree = leaderboard.slice(0, 3);
-
-  lb.innerHTML = `
-    <h2 class="top3-title">🏆 Beste Memory-Spieler</h2>
-    <div class="top3-podium">
-      ${buildPodiumCard(topThree[1], 2, '🥈', 'podium-second', myName)}
-      ${buildPodiumCard(topThree[0], 1, '🥇', 'podium-first', myName)}
-      ${buildPodiumCard(topThree[2], 3, '🥉', 'podium-third', myName)}
-    </div>
-
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>#</th><th></th><th>Spieler</th><th>Züge</th><th>Paare</th><th>Datum</th>${isAdminLoggedIn() ? '<th></th>' : ''}
-        </tr>
-      </thead>
-      <tbody>
-        ${leaderboard.map((s, i) => {
-          const isYou = s.player_name === myName;
-          return `<tr class="${isYou ? 'lb-you' : ''}">
-            <td class="lb-rank">${i + 1}</td>
-            <td class="lb-medal">${medals[i] || ''}</td>
-            <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px">(Du)</span>' : ''}</td>
-            <td class="lb-score">${s.score}</td>
-            <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs ?? '-'} Paare</td>
-            <td class="lb-time">${escHtml(s.date_label || s.created_at || '')}</td>
-            ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteEntry(${s.id})">Löschen</button></td>` : ''}
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-
-    ${isAdminLoggedIn() ? `
-      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-danger" onclick="doReset()">Rangliste leeren</button>
-      </div>` : ''}`;
+  document.title = `Schulziegen – ${goat.name}`;
+  renderPage();
 }
 
-async function deleteEntry(id) {
-  if (!confirm('Diesen Ranglisten-Eintrag wirklich löschen?')) return;
-  try {
-    await deleteLeaderboardEntry(id);
-    await loadLeaderboard();
-  } catch (err) {
-    alert(err.message || 'Löschen fehlgeschlagen.');
+function renderPage() {
+  const votedId = getVotedId();
+  const voted   = votedId === goat.id;
+  const hasVoted= votedId !== null;
+
+  const prevGoat = goatIdx > 0 ? goats[goatIdx - 1] : null;
+  const nextGoat = goatIdx < goats.length - 1 ? goats[goatIdx + 1] : null;
+
+  // Foto-Quelle ermitteln: hochgeladen → bilder/-Ordner → Emoji
+  const hauptfoto = (goat.photos && goat.photos.length)
+    ? goat.photos[0]
+    : goat.foto || null;
+
+  const photoHtml = (goat.photos && goat.photos.length)
+    ? `<div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden">
+        <div class="photo-track" id="ph-track">
+          ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
+        </div>
+        ${goat.photos.length > 1 ? `
+          <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
+          <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
+          <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
+        ` : ''}
+      </div>`
+    : goat.foto
+      ? `<div class="detail-photo" style="aspect-ratio:16/9;overflow:hidden">
+           <img src="${goat.foto}" alt="${goat.name}"
+                style="width:100%;height:100%;object-fit:cover"
+                onerror="this.parentNode.innerHTML='<span style=\'font-size:7rem\'>${goat.e}</span>'">
+         </div>`
+      : `<div class="detail-photo"><span>${goat.e}</span></div>`;
+
+  document.getElementById('page-body').innerHTML = `
+    <div class="detail-card">
+
+      ${photoHtml}
+
+      <div class="detail-body">
+        <div class="detail-name">${goat.name}</div>
+        <div class="detail-nick">${goat.nick}</div>
+
+        <div class="detail-grid">
+          <div>
+            <div class="detail-field-label">Rasse</div>
+            <div class="detail-field-value" id="f-breed" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'breed\',this)"' : ''}>${goat.breed}</div>
+          </div>
+          <div>
+            <div class="detail-field-label">Alter</div>
+            <div class="detail-field-value" id="f-age" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'age\',this)"' : ''}>${goat.age}</div>
+          </div>
+          <div>
+            <div class="detail-field-label">Charakter</div>
+            <div class="detail-field-value" id="f-character" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'character\',this)"' : ''}>${goat.character}</div>
+          </div>
+          <div>
+            <div class="detail-field-label">Lieblingsessen</div>
+            <div class="detail-field-value" id="f-food" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'food\',this)"' : ''}>${goat.food}</div>
+          </div>
+          ${goat.mother ? `<div>
+            <div class="detail-field-label">Mutter</div>
+            <div class="detail-field-value">${goat.mother}</div>
+          </div>` : ''}
+          <div>
+            <div class="detail-field-label">Besondere Fähigkeit</div>
+            <div class="detail-field-value" id="f-skill" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'skill\',this)"' : ''}>${goat.skill}</div>
+          </div>
+        </div>
+
+        <div class="detail-story">
+          <div class="detail-field-label">Geschichte</div>
+          <div class="detail-field-value" id="f-story" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'story\',this)"' : ''}>${goat.story}</div>
+        </div>
+      </div>
+
+      <div class="detail-nav">
+        <button class="vote-btn${voted ? ' voted' : ''}" id="vote-btn"
+          onclick="doVote()" ${hasVoted && !voted ? 'disabled' : ''}>
+          ${voted ? '♥ Du hast gewählt' : '♡ Abstimmen'}
+        </button>
+        <span style="font-size:13px;color:var(--clr-text-muted)">${goat.votes > 0 ? `♡ ${goat.votes} Stimme${goat.votes !== 1 ? 'n' : ''}` : ''}</span>
+
+        <div style="display:flex;gap:8px;margin-left:auto">
+          ${prevGoat ? `<a class="modal-arrow" href="/OhmoorZiegen/ziege.html?id=${prevGoat.id}" title="${prevGoat.name}">‹</a>` : ''}
+          ${nextGoat ? `<a class="modal-arrow" href="/OhmoorZiegen/ziege.html?id=${nextGoat.id}" title="${nextGoat.name}">›</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  // Foto-Navigation init
+  if (goat.photos && goat.photos.length > 1) {
+    updatePhNav();
   }
 }
 
-async function doReset() {
-  if (!confirm('Rangliste wirklich leeren?')) return;
-  try {
-    await clearScores();
-    await loadLeaderboard();
-  } catch (err) {
-    alert(err.message || 'Zurücksetzen fehlgeschlagen.');
-  }
+// ── Foto-Karussel ──
+let phIdx = 0;
+
+function phNav(dir) {
+  phIdx = Math.max(0, Math.min((goat.photos || []).length - 1, phIdx + dir));
+  phUpdateDisplay();
 }
 
-loadLeaderboard();
+function phGo(i) { phIdx = i; phUpdateDisplay(); }
+
+function phUpdateDisplay() {
+  const track = document.getElementById('ph-track');
+  if (track) track.style.transform = `translateX(-${phIdx * 100}%)`;
+  updatePhNav();
+  document.querySelectorAll('.ph-dot').forEach((d, i) => d.classList.toggle('on', i === phIdx));
+}
+
+function updatePhNav() {
+  const l = document.getElementById('phl');
+  const r = document.getElementById('phr');
+  if (l) l.disabled = phIdx === 0;
+  if (r) r.disabled = phIdx >= (goat.photos || []).length - 1;
+}
+
+// ── Abstimmen ──
+function doVote() {
+  if (getVotedId() !== null) return;
+  goat.votes++;
+  setVotedId(goat.id);
+  saveGoatData();
+  document.getElementById('vote-btn').className = 'vote-btn voted';
+  document.getElementById('vote-btn').textContent = '♥ Du hast gewählt';
+  document.getElementById('vote-btn').disabled = true;
+}
 </script>
 </body>
 </html>
