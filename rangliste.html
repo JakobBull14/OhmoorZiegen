@@ -6,98 +6,32 @@
 <title>Schulziegen – Ranglisten</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
 <style>
-.rank-hero{
-  margin: 0 0 18px 0;
-}
-.rank-cards{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:16px;
-  margin: 0 0 22px 0;
-}
+.rank-hero{ margin:0 0 18px 0; }
+.rank-cards{ display:grid; grid-template-columns:1fr; gap:16px; margin:0 0 22px 0; }
 .rank-card{
-  border-radius:20px;
-  padding:16px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.08);
-  border:1px solid rgba(0,0,0,0.06);
-  background:#fff;
+  border-radius:20px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08);
+  border:1px solid rgba(0,0,0,0.06); background:#fff;
 }
-.rank-card.memory{
-  background:linear-gradient(180deg,#fff8e1 0%, #ffffff 100%);
-  border-top:6px solid #d4af37;
-}
-.rank-card.quiz{
-  background:linear-gradient(180deg,#eef2ff 0%, #ffffff 100%);
-  border-top:6px solid #4f46e5;
-}
-.rank-card-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:12px;
-}
-.rank-card-title{
-  font-size:20px;
-  font-weight:800;
-  margin:0;
-}
-.rank-card-sub{
-  font-size:13px;
-  color:var(--clr-text-muted);
-  margin:2px 0 0 0;
-}
-.top3-mini{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin:0 0 14px 0;
-}
+.rank-card.memory{ background:linear-gradient(180deg,#fff8e1 0%, #ffffff 100%); border-top:6px solid #d4af37; }
+.rank-card.quiz{ background:linear-gradient(180deg,#eef2ff 0%, #ffffff 100%); border-top:6px solid #4f46e5; }
+.rank-card-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.rank-card-title{ font-size:20px; font-weight:800; margin:0; }
+.rank-card-sub{ font-size:13px; color:var(--clr-text-muted); margin:2px 0 0 0; }
+.top3-mini{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 14px 0; }
 .top3-mini-item{
-  text-align:center;
-  border-radius:16px;
-  padding:12px 8px;
-  border:1px solid rgba(0,0,0,0.06);
-  background:rgba(255,255,255,0.75);
+  text-align:center; border-radius:16px; padding:12px 8px;
+  border:1px solid rgba(0,0,0,0.06); background:rgba(255,255,255,0.75);
 }
-.top3-mini-item.first{
-  transform:translateY(-4px);
-}
-.top3-mini-medal{
-  font-size:22px;
-  margin-bottom:4px;
-}
-.top3-mini-name{
-  font-size:14px;
-  font-weight:800;
-  line-height:1.2;
-  word-break:break-word;
-  margin-bottom:4px;
-}
-.top3-mini-score{
-  font-size:14px;
-  font-weight:800;
-}
-.top3-mini-meta{
-  font-size:11px;
-  color:var(--clr-text-muted);
-  margin-top:2px;
-}
-.rank-section{
-  margin: 0 0 24px 0;
-}
-.rank-section-title{
-  margin:0 0 12px 0;
-  font-size:20px;
-  font-weight:800;
-}
-@media (max-width: 420px){
-  .top3-mini-name{
-    font-size:13px;
-  }
-  .top3-mini-score{
-    font-size:13px;
-  }
+.top3-mini-item.first{ transform:translateY(-4px); }
+.top3-mini-medal{ font-size:22px; margin-bottom:4px; }
+.top3-mini-name{ font-size:14px; font-weight:800; line-height:1.2; word-break:break-word; margin-bottom:4px; }
+.top3-mini-score{ font-size:14px; font-weight:800; }
+.top3-mini-meta{ font-size:11px; color:var(--clr-text-muted); margin-top:2px; }
+.rank-section{ margin:0 0 24px 0; }
+.rank-section-title{ margin:0 0 12px 0; font-size:20px; font-weight:800; }
+@media (max-width:420px){
+  .top3-mini-name{ font-size:13px; }
+  .top3-mini-score{ font-size:13px; }
 }
 </style>
 </head>
@@ -137,24 +71,13 @@
 
   <section id="memory-full" class="rank-section"></section>
   <section id="quiz-full" class="rank-section"></section>
-  <button id="back-to-top" onclick="scrollToTop()" style="
-    position:fixed;
-    right:16px;
-    bottom:20px;
-    width:48px;
-    height:48px;
-    border:none;
-    border-radius:999px;
-    background:var(--clr-blue);
-    color:#fff;
-    font-size:20px;
-    font-weight:800;
-    box-shadow:0 8px 24px rgba(0,0,0,0.18);
-    cursor:pointer;
-    display:none;
-    z-index:999;
-  ">↑</button>
 
+  <button id="back-to-top" onclick="scrollToTop()" style="
+    position:fixed; right:16px; bottom:20px; width:48px; height:48px; border:none;
+    border-radius:999px; background:var(--clr-blue); color:#fff; font-size:20px;
+    font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,0.18); cursor:pointer;
+    display:none; z-index:999;
+  ">↑</button>
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -169,6 +92,19 @@ function scrollToSection(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleBackToTop() {
+  const btn = document.getElementById('back-to-top');
+  if (!btn) return;
+  btn.style.display = window.scrollY > 220 ? 'block' : 'none';
+}
+
+window.addEventListener('scroll', toggleBackToTop);
+window.addEventListener('load', toggleBackToTop);
 
 async function fetchQuizLeaderboard() {
   const res = await fetch(`${API_BASE}/api/quiz/leaderboard`, { cache: 'no-store' });
@@ -198,9 +134,7 @@ function renderMiniTop3(containerId, data, type) {
   el.innerHTML = `<div class="top3-mini">
     ${top.map((p, i) => {
       const isYou = p.player_name === myName;
-      const score = type === 'memory'
-        ? `${p.score} Züge`
-        : `${p.score}/${p.total}`;
+      const score = type === 'memory' ? `${p.score} Züge` : `${p.score}/${p.total}`;
       const meta = type === 'memory'
         ? `${p.pairs ?? '-'} Paare`
         : `${p.total ? Math.round((p.score / p.total) * 100) : 0}% richtig`;
@@ -285,7 +219,7 @@ function renderQuizFull() {
     <table class="leaderboard-table">
       <thead>
         <tr>
-          <th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Quote</th><th>Datum</th>
+          <th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Quote</th><th>Datum</th>${isAdminLoggedIn() ? '<th></th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -299,36 +233,25 @@ function renderQuizFull() {
             <td class="lb-score">${s.score}/${s.total}</td>
             <td style="color:var(--clr-text-muted);font-size:12px">${percent}%</td>
             <td class="lb-time">${escHtml(formatPodiumDate(s.created_at) || s.created_at || '')}</td>
+            ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteQuizEntry(${s.id})">Löschen</button></td>` : ''}
           </tr>`;
         }).join('')}
       </tbody>
-    </table>`;
+    </table>
+    ${isAdminLoggedIn() ? `
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-danger" onclick="doResetQuiz()">Quiz-Rangliste leeren</button>
+      </div>` : ''}`;
 }
 
 async function deleteEntry(id) {
-  if (!confirm('Diesen Ranglisten-Eintrag wirklich löschen?')) return;
-
+  if (!confirm('Diesen Memory-Ranglisten-Eintrag wirklich löschen?')) return;
   const adminPw = prompt('Admin-Passwort eingeben:');
   if (!adminPw) return;
 
   try {
     await deleteLeaderboardEntry(id, adminPw);
-    await 
-function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function toggleBackToTop() {
-  const btn = document.getElementById('back-to-top');
-  if (!btn) return;
-  btn.style.display = window.scrollY > 220 ? 'block' : 'none';
-}
-
-window.addEventListener('scroll', toggleBackToTop);
-window.addEventListener('load', toggleBackToTop);
-
-
-loadRankings();
+    await loadRankings();
   } catch (err) {
     alert(err.message || 'Löschen fehlgeschlagen.');
   }
@@ -336,12 +259,45 @@ loadRankings();
 
 async function doReset() {
   if (!confirm('Memory-Rangliste wirklich leeren?')) return;
-
   const adminPw = prompt('Admin-Passwort eingeben:');
   if (!adminPw) return;
 
   try {
     await clearScores(adminPw);
+    await loadRankings();
+  } catch (err) {
+    alert(err.message || 'Zurücksetzen fehlgeschlagen.');
+  }
+}
+
+async function deleteQuizEntry(id) {
+  if (!confirm('Diesen Quiz-Ranglisten-Eintrag wirklich löschen?')) return;
+  const adminPw = prompt('Admin-Passwort eingeben:');
+  if (!adminPw) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/quiz/leaderboard/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': adminPw }
+    });
+    if (!res.ok) throw new Error(`Delete API ${res.status}`);
+    await loadRankings();
+  } catch (err) {
+    alert(err.message || 'Löschen fehlgeschlagen.');
+  }
+}
+
+async function doResetQuiz() {
+  if (!confirm('Quiz-Rangliste wirklich leeren?')) return;
+  const adminPw = prompt('Admin-Passwort eingeben:');
+  if (!adminPw) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/quiz/leaderboard/reset`, {
+      method: 'POST',
+      headers: { 'X-Admin-Password': adminPw }
+    });
+    if (!res.ok) throw new Error(`Reset API ${res.status}`);
     await loadRankings();
   } catch (err) {
     alert(err.message || 'Zurücksetzen fehlgeschlagen.');
