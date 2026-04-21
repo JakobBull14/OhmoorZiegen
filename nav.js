@@ -97,11 +97,7 @@ function buildNav(activePage) {
           : `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔑</span>Admin-Login</a>`
         }
       </div>
-    </div>
-
-    <footer style="margin-top:28px;padding:18px 20px 28px;text-align:center;font-size:12px;color:var(--clr-text-muted);border-top:1px solid rgba(0,0,0,0.08)">
-     <a href="/OhmoorZiegen/datenschutz.html" style="color:inherit;text-decoration:none">Datenschutz</a>
-    </footer>`;
+    </div>;
 
 
   const root = document.getElementById('nav-root');
