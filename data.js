@@ -22,7 +22,6 @@ function hashPw(s) {
   return h.toString(36);
 }
 
-const ADMIN_PW_HASH = hashPw('ZiegenAdmin2025'); // Passwort hier ändern!
 
 function isAdminLoggedIn() {
   return LS.g('sz_admin_session') === true;
