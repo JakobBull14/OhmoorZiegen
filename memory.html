@@ -23,10 +23,78 @@
 
   <div class="memory-controls" id="mem-controls"></div>
   <div class="memory-board"    id="mem-board"></div>
+
+<!-- Name Modal -->
+<div id="name-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:1000">
+  <div style="background:white;border-radius:16px;padding:22px;max-width:320px;width:90%;text-align:center">
+    <div style="font-size:18px;font-weight:600;margin-bottom:10px">Dein Spielername</div>
+    <div style="font-size:13px;color:#666;margin-bottom:14px">
+      Bitte gib deinen Namen ein, unter dem dich andere erkennen.
+    </div>
+    <input id="name-input" type="text" placeholder="Dein Name"
+      style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;margin-bottom:14px">
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-secondary" onclick="closeNameModal()">Abbrechen</button>
+      <button class="btn-primary" onclick="saveName()">Speichern</button>
+    </div>
+    <div id="name-error" style="color:red;font-size:12px;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
 </main>
 
-<script src="/OhmoorZiegen/data.js"></script>
-<script src="/OhmoorZiegen/nav.js"></script>
+<script src="/OhmoorZiegen/data.js">
+function openNameModal(isChange=false){
+  document.getElementById('name-modal').style.display='flex';
+  document.getElementById('name-input').value = getDisplayName() || '';
+}
+
+function closeNameModal(){
+  document.getElementById('name-modal').style.display='none';
+}
+
+function saveName(){
+  const input = document.getElementById('name-input').value;
+  const valid = validatePlayerName(input);
+  if(!valid.ok){
+    const err = document.getElementById('name-error');
+    err.textContent = valid.error;
+    err.style.display='block';
+    return;
+  }
+  setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed','1');
+  showName();
+  closeNameModal();
+}
+
+</script>
+<script src="/OhmoorZiegen/nav.js">
+function openNameModal(isChange=false){
+  document.getElementById('name-modal').style.display='flex';
+  document.getElementById('name-input').value = getDisplayName() || '';
+}
+
+function closeNameModal(){
+  document.getElementById('name-modal').style.display='none';
+}
+
+function saveName(){
+  const input = document.getElementById('name-input').value;
+  const valid = validatePlayerName(input);
+  if(!valid.ok){
+    const err = document.getElementById('name-error');
+    err.textContent = valid.error;
+    err.style.display='block';
+    return;
+  }
+  setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed','1');
+  showName();
+  closeNameModal();
+}
+
+</script>
 <script>
 buildNav('memory');
 
@@ -74,27 +142,8 @@ function showName() {
 }
 
 function askForPlayerName() {
-  let validName = null;
-
-  while (!validName) {
-    const input = prompt(
-`Wähle deinen Spielernamen
-
-Gib den Namen ein, unter dem dich andere an der Schule erkennen (z. B. dein Vorname).
-Wenn Du die App schon auf einem anderen Gerät benutzt, verwende bitte hier den selben Namen.
-Sollte dein Name schon vergeben sein, füge eine Zahl oder deine Klasse hinzu (z. B. 6B).
-Bitte keine Fantasienamen oder unangemessenen Namen – solche Namen können gelöscht werden.`,
-      getDisplayName() || ''
-    );
-
-    if (!input) continue;
-
-    const valid = validatePlayerName(input);
-    if (valid.ok) {
-      validName = valid.name;
-    } else {
-      alert(valid.error);
-    }
+  openNameModal();
+}
   }
 
   setDisplayName(validName);
@@ -110,13 +159,8 @@ function ensureConfirmedPlayerName() {
 }
 
 function changeName() {
-  const n = prompt('Dein Name für die Rangliste:', getDisplayName());
-  if (!n) return;
-  const valid = validatePlayerName(n);
-  if (!valid.ok) {
-    alert(valid.error);
-    return;
-  }
+  openNameModal(true);
+}
   setDisplayName(valid.name);
   localStorage.setItem('goat_name_confirmed', '1');
   showName();
@@ -245,6 +289,31 @@ showName();
   await loadGoats();
   startMemory();
 })();
+
+function openNameModal(isChange=false){
+  document.getElementById('name-modal').style.display='flex';
+  document.getElementById('name-input').value = getDisplayName() || '';
+}
+
+function closeNameModal(){
+  document.getElementById('name-modal').style.display='none';
+}
+
+function saveName(){
+  const input = document.getElementById('name-input').value;
+  const valid = validatePlayerName(input);
+  if(!valid.ok){
+    const err = document.getElementById('name-error');
+    err.textContent = valid.error;
+    err.style.display='block';
+    return;
+  }
+  setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed','1');
+  showName();
+  closeNameModal();
+}
+
 </script>
 </body>
 </html>
