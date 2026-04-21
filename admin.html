@@ -241,9 +241,9 @@ function showMsg(id, text, type='ok') {
   el.innerHTML = `<div class="auth-msg ${type==='err'?'err':'ok'}">${escHtml(text)}</div>`;
 }
 
-function doLogin() {
+async function doLogin() {
   const pw = document.getElementById('pw-input').value;
-  if (adminLogin(pw)) {
+  if (await adminLogin(pw)) {
     adminPw = pw;
     showAdmin();
   } else {
