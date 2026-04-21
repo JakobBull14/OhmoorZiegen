@@ -28,12 +28,19 @@ function isAdminLoggedIn() {
   return LS.g('sz_admin_session') === true;
 }
 
-function adminLogin(pw) {
-  if (hashPw(pw) === ADMIN_PW_HASH) {
+async function adminLogin(pw) {
+  try {
+    await apiRequest('/api/admin/verify', {
+      method: 'POST',
+      headers: { 'X-Admin-Password': pw }
+    });
+
     LS.s('sz_admin_session', true);
     return true;
+
+  } catch (e) {
+    return false;
   }
-  return false;
 }
 
 function adminLogout() {
