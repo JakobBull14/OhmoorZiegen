@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Quiz</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
+
+<style>
+#name-modal .name-modal-card{background:#ffffff;border:1px solid rgba(0,0,0,0.08);color:var(--clr-text);}
+#name-modal .name-modal-input{background:#ffffff;color:var(--clr-text);border:1px solid var(--clr-border);}
+html[data-dark] #name-modal .name-modal-card{background:#1f2430;border:1px solid rgba(255,255,255,0.10);}
+html[data-dark] #name-modal .name-modal-input{background:#161b22;color:#f3f4f6;border:1px solid rgba(255,255,255,0.14);}
+html[data-dark] #name-modal .name-modal-help{color:#c7cfdb !important;}
+</style>
+
 </head>
 <body>
 
@@ -13,6 +22,22 @@
 <main class="app-main">
   <div class="page-title">🧠 Ziegen-Quiz</div>
   <div class="quiz-wrap" id="quiz-body"></div>
+
+<div id="name-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px">
+  <div class="name-modal-card" style="width:min(420px,100%);border-radius:18px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,0.18)">
+    <div style="font-size:20px;font-weight:800;color:var(--clr-text);margin-bottom:8px">Dein Spielername</div>
+    <div class="name-modal-help" style="font-size:14px;margin-bottom:14px">
+      Bitte gib den Namen ein, unter dem dich andere erkennen.
+    </div>
+    <input id="name-input" class="name-modal-input" type="text"
+      style="width:100%;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">
+    <div id="name-error" style="display:none;color:#b42318;font-size:12px;margin-top:10px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+      <button class="btn-primary" onclick="saveNameFromModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -47,7 +72,15 @@ function validatePlayerName(n) {
   return { ok: true, name };
 }
 
+
 function askForPlayerName() {
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('name-input');
+  modal.style.display = 'flex';
+  input.value = getDisplayName() || '';
+  setTimeout(()=>input.focus(),50);
+}
+
   let validName = null;
 
   while (!validName) {
@@ -201,6 +234,21 @@ async function saveQuizResult(score, total) {
   } catch (e) {
     console.warn('Quiz-Ergebnis konnte nicht gespeichert werden', e);
   }
+}
+
+
+function saveNameFromModal(){
+  const input = document.getElementById('name-input');
+  const error = document.getElementById('name-error');
+  const valid = validatePlayerName(input.value);
+  if(!valid.ok){
+    error.textContent = valid.error;
+    error.style.display='block';
+    return;
+  }
+  setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed','1');
+  document.getElementById('name-modal').style.display='none';
 }
 
 ensureConfirmedPlayerName();
