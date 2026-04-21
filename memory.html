@@ -24,77 +24,30 @@
   <div class="memory-controls" id="mem-controls"></div>
   <div class="memory-board"    id="mem-board"></div>
 
-<!-- Name Modal -->
-<div id="name-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:1000">
-  <div style="background:white;border-radius:16px;padding:22px;max-width:320px;width:90%;text-align:center">
-    <div style="font-size:18px;font-weight:600;margin-bottom:10px">Dein Spielername</div>
-    <div style="font-size:13px;color:#666;margin-bottom:14px">
-      Bitte gib deinen Namen ein, unter dem dich andere erkennen.
+  <!-- Freundliche Namenseingabe -->
+  <div id="name-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.28);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px">
+    <div style="width:min(420px,100%);background:#fff;border-radius:18px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,0.18);border:1px solid rgba(0,0,0,0.08)">
+      <div style="font-size:20px;font-weight:800;color:var(--clr-text);margin-bottom:8px">Dein Spielername</div>
+      <div style="font-size:14px;line-height:1.5;color:var(--clr-text-muted);margin-bottom:14px">
+        Bitte gib den Namen ein, unter dem dich andere an der Schule erkennen.
+      </div>
+      <div style="font-size:13px;line-height:1.5;color:var(--clr-text-muted);margin-bottom:14px">
+        Wenn du die App schon auf einem anderen Gerät benutzt, verwende bitte denselben Namen.
+      </div>
+      <input id="name-input" type="text" placeholder="Zum Beispiel: Mia oder Tom 6B"
+        style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--clr-border);background:#fff;color:var(--clr-text);font-size:14px;outline:none;box-sizing:border-box">
+      <div id="name-error" style="display:none;color:#b42318;font-size:12px;margin-top:10px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap">
+        <button class="btn-secondary" type="button" onclick="closeNameModal()">Abbrechen</button>
+        <button class="btn-primary" type="button" onclick="saveNameFromModal()">Speichern</button>
+      </div>
     </div>
-    <input id="name-input" type="text" placeholder="Dein Name"
-      style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;margin-bottom:14px">
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn-secondary" onclick="closeNameModal()">Abbrechen</button>
-      <button class="btn-primary" onclick="saveName()">Speichern</button>
-    </div>
-    <div id="name-error" style="color:red;font-size:12px;margin-top:10px;display:none"></div>
   </div>
-</div>
 
 </main>
 
-<script src="/OhmoorZiegen/data.js">
-function openNameModal(isChange=false){
-  document.getElementById('name-modal').style.display='flex';
-  document.getElementById('name-input').value = getDisplayName() || '';
-}
-
-function closeNameModal(){
-  document.getElementById('name-modal').style.display='none';
-}
-
-function saveName(){
-  const input = document.getElementById('name-input').value;
-  const valid = validatePlayerName(input);
-  if(!valid.ok){
-    const err = document.getElementById('name-error');
-    err.textContent = valid.error;
-    err.style.display='block';
-    return;
-  }
-  setDisplayName(valid.name);
-  localStorage.setItem('goat_name_confirmed','1');
-  showName();
-  closeNameModal();
-}
-
-</script>
-<script src="/OhmoorZiegen/nav.js">
-function openNameModal(isChange=false){
-  document.getElementById('name-modal').style.display='flex';
-  document.getElementById('name-input').value = getDisplayName() || '';
-}
-
-function closeNameModal(){
-  document.getElementById('name-modal').style.display='none';
-}
-
-function saveName(){
-  const input = document.getElementById('name-input').value;
-  const valid = validatePlayerName(input);
-  if(!valid.ok){
-    const err = document.getElementById('name-error');
-    err.textContent = valid.error;
-    err.style.display='block';
-    return;
-  }
-  setDisplayName(valid.name);
-  localStorage.setItem('goat_name_confirmed','1');
-  showName();
-  closeNameModal();
-}
-
-</script>
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
 <script>
 buildNav('memory');
 
@@ -144,12 +97,6 @@ function showName() {
 function askForPlayerName() {
   openNameModal();
 }
-  }
-
-  setDisplayName(validName);
-  localStorage.setItem('goat_name_confirmed', '1');
-  showName();
-}
 
 function ensureConfirmedPlayerName() {
   const confirmed = localStorage.getItem('goat_name_confirmed') === '1';
@@ -160,10 +107,6 @@ function ensureConfirmedPlayerName() {
 
 function changeName() {
   openNameModal(true);
-}
-  setDisplayName(valid.name);
-  localStorage.setItem('goat_name_confirmed', '1');
-  showName();
 }
 
 function startMemory() {
@@ -282,6 +225,50 @@ async function gameWon() {
     </div>`;
 }
 
+
+function openNameModal(isChange = false) {
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('name-input');
+  const error = document.getElementById('name-error');
+  if (!modal || !input || !error) return;
+
+  modal.style.display = 'flex';
+  input.value = getDisplayName() || '';
+  input.dataset.allowClose = isChange ? '1' : '0';
+  error.style.display = 'none';
+  error.textContent = '';
+  setTimeout(() => input.focus(), 20);
+}
+
+function closeNameModal() {
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('name-input');
+  if (!modal || !input) return;
+
+  if (input.dataset.allowClose === '1') {
+    modal.style.display = 'none';
+  }
+}
+
+function saveNameFromModal() {
+  const input = document.getElementById('name-input');
+  const error = document.getElementById('name-error');
+  if (!input || !error) return;
+
+  const valid = validatePlayerName(input.value);
+  if (!valid.ok) {
+    error.textContent = valid.error;
+    error.style.display = 'block';
+    return;
+  }
+
+  setDisplayName(valid.name);
+  localStorage.setItem('goat_name_confirmed', '1');
+  showName();
+  document.getElementById('name-modal').style.display = 'none';
+}
+
+
 showName();
 
 (async () => {
@@ -289,31 +276,6 @@ showName();
   await loadGoats();
   startMemory();
 })();
-
-function openNameModal(isChange=false){
-  document.getElementById('name-modal').style.display='flex';
-  document.getElementById('name-input').value = getDisplayName() || '';
-}
-
-function closeNameModal(){
-  document.getElementById('name-modal').style.display='none';
-}
-
-function saveName(){
-  const input = document.getElementById('name-input').value;
-  const valid = validatePlayerName(input);
-  if(!valid.ok){
-    const err = document.getElementById('name-error');
-    err.textContent = valid.error;
-    err.style.display='block';
-    return;
-  }
-  setDisplayName(valid.name);
-  localStorage.setItem('goat_name_confirmed','1');
-  showName();
-  closeNameModal();
-}
-
 </script>
 </body>
 </html>
