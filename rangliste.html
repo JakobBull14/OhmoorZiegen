@@ -107,6 +107,29 @@
   font-weight:700;
 }
 
+
+html[data-dark] .rank-card.memory{
+  background:linear-gradient(180deg,#3a2f12 0%, #241d0f 100%);
+  border:1px solid rgba(255,255,255,0.10);
+}
+html[data-dark] .rank-card.quiz{
+  background:linear-gradient(180deg,#1d2246 0%, #15192f 100%);
+  border:1px solid rgba(255,255,255,0.10);
+}
+html[data-dark] .rank-card-title,
+html[data-dark] .top3-mini-name,
+html[data-dark] .top3-mini-score{
+  color:#f5f7fb;
+}
+html[data-dark] .top3-mini-item{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.10);
+}
+html[data-dark] .rank-card-sub,
+html[data-dark] .top3-mini-meta{
+  color:#d5dbe5;
+}
+
 </style>
 </head>
 <body>
@@ -321,7 +344,12 @@ async function deleteEntry(id) {
 
   try {
     await deleteLeaderboardEntry(id, adminPw);
-    await 
+    await loadRankings();
+  } catch (err) {
+    alert(err.message || 'Löschen fehlgeschlagen.');
+  }
+}
+
 function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -334,13 +362,6 @@ function toggleBackToTop() {
 
 window.addEventListener('scroll', toggleBackToTop);
 window.addEventListener('load', toggleBackToTop);
-
-
-loadRankings();
-  } catch (err) {
-    alert(err.message || 'Löschen fehlgeschlagen.');
-  }
-}
 
 async function doReset() {
   if (!confirm('Memory-Rangliste wirklich leeren?')) return;
