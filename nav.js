@@ -105,7 +105,7 @@ function buildNav(activePage) {
 
   if (!document.getElementById('app-footer')) {
     document.body.insertAdjacentHTML('beforeend', `
-      <footer id="app-footer" style="margin-top:28px;padding:18px 20px 28px;text-align:center;font-size:12px;color:var(--clr-text-muted);border-top:1px solid rgba(0,0,0,0.08)">
+      <footer id="app-footer" style="margin-top:40px;padding:24px 20px 32px;text-align:center;font-size:13px;color:var(--clr-text-muted);border-top:1px solid rgba(0,0,0,0.08);opacity:0.9">
         <a href="/OhmoorZiegen/datenschutz.html" style="color:inherit;text-decoration:none">Datenschutz</a>
       </footer>
     `);
