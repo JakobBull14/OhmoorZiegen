@@ -593,11 +593,15 @@ async function changeAdminPassword() {
       return;
     }
 
-    adminPw = newPw;
+    adminPw = '';
     document.getElementById('pw-old').value = '';
     document.getElementById('pw-new').value = '';
     document.getElementById('pw-new2').value = '';
-    showMsg('pw-msg', 'Passwort wurde geändert.', 'ok');
+    showMsg('pw-msg', 'Passwort wurde geändert. Du wirst jetzt neu angemeldet.', 'ok');
+    setTimeout(() => {
+      doLogout();
+      showMsg('login-msg', 'Bitte mit dem neuen Passwort wieder anmelden.', 'ok');
+    }, 900);
   } catch (err) {
     showMsg('pw-msg', 'Passwort konnte nicht geändert werden.', 'err');
   }
