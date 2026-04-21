@@ -97,7 +97,7 @@ function buildNav(activePage) {
           : `<a class="drawer-item" href="admin.html"><span class="drawer-item-icon">🔑</span>Admin-Login</a>`
         }
       </div>
-    </div>;
+    </div>`;
 
 
   const root = document.getElementById('nav-root');
