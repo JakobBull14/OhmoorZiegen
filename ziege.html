@@ -5,78 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Ziege</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
-
-<style>
-#carousel-wrap{
-  position:relative;
-  width:100%;
-  aspect-ratio:16/9;
-  background:var(--clr-bg-subtle);
-  overflow:hidden;
-  border-radius:14px;
-}
-#ph-track{
-  display:flex;
-  width:100%;
-  height:100%;
-  transition:transform 0.3s ease;
-  will-change:transform;
-}
-.photo-slide{
-  min-width:100%;
-  width:100%;
-  height:100%;
-  flex:0 0 100%;
-}
-.photo-slide img{
-  display:block;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-.ph-nav{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  z-index:5;
-  width:40px;
-  height:40px;
-  border:none;
-  border-radius:999px;
-  background:rgba(0,0,0,0.45);
-  color:#fff;
-  font-size:24px;
-  line-height:1;
-  cursor:pointer;
-}
-.ph-nav.l{left:10px;}
-.ph-nav.r{right:10px;}
-.ph-nav:disabled{
-  opacity:0.45;
-  cursor:default;
-}
-.ph-dots{
-  position:absolute;
-  left:50%;
-  bottom:10px;
-  transform:translateX(-50%);
-  z-index:5;
-  display:flex;
-  gap:8px;
-}
-.ph-dot{
-  width:10px;
-  height:10px;
-  border:none;
-  border-radius:999px;
-  background:rgba(255,255,255,0.55);
-  cursor:pointer;
-}
-.ph-dot.on{
-  background:#fff;
-}
-</style>
-
 </head>
 <body>
 
@@ -213,8 +141,8 @@ function renderPage() {
 
       <div class="detail-nav">
         <button class="vote-btn${voted ? ' voted' : ''}" id="vote-btn"
-          onclick="doVote()">
-          ${voted ? '♥ Du hast gewählt' : hasVoted ? '♡ Stimme ändern' : '♡ Abstimmen'}
+          onclick="doVote()" ${hasVoted && !voted ? 'disabled' : ''}>
+          ${voted ? '♥ Du hast gewählt' : '♡ Abstimmen'}
         </button>
         <span style="font-size:13px;color:var(--clr-text-muted)">${goat.votes > 0 ? `♡ ${goat.votes} Stimme${goat.votes !== 1 ? 'n' : ''}` : ''}</span>
 
@@ -236,9 +164,10 @@ function renderPage() {
 
   // Foto-Navigation init
   phIdx = 0;
-  phUpdateDisplay();
+  if (goat.photos && goat.photos.length) {
+    phUpdateDisplay();
+  }
 }
-
 
 // ── Foto-Karussel ──
 let phIdx = 0;
@@ -254,14 +183,25 @@ function phUpdateDisplay() {
   const track = document.getElementById('ph-track');
   if (track) track.style.transform = `translateX(-${phIdx * 100}%)`;
   updatePhNav();
-  document.querySelectorAll('.ph-dot').forEach((d, i) => d.classList.toggle('on', i === phIdx));
+  document.querySelectorAll('.ph-dot').forEach((d, i) => {
+    d.classList.toggle('on', i === phIdx);
+    d.style.background = i === phIdx ? '#fff' : 'rgba(255,255,255,0.55)';
+  });
 }
 
 function updatePhNav() {
   const l = document.getElementById('phl');
   const r = document.getElementById('phr');
-  if (l) l.disabled = phIdx === 0;
-  if (r) r.disabled = phIdx >= (goat.photos || []).length - 1;
+  if (l) {
+    l.disabled = phIdx === 0;
+    l.style.opacity = phIdx === 0 ? '0.45' : '1';
+    l.style.cursor = phIdx === 0 ? 'default' : 'pointer';
+  }
+  if (r) {
+    r.disabled = phIdx >= (goat.photos || []).length - 1;
+    r.style.opacity = phIdx >= (goat.photos || []).length - 1 ? '0.45' : '1';
+    r.style.cursor = phIdx >= (goat.photos || []).length - 1 ? 'default' : 'pointer';
+  }
 }
 
 // ── Foto hochladen (Admin) ──
@@ -308,18 +248,14 @@ function saveGoatData() {
 }
 
 // ── Abstimmen ──
-async function doVote() {
-  try {
-    await submitVote(goat.id);
-    await fetchCurrentVote();
-    const allGoats = await getGoatsFromApi();
-    goats = allGoats;
-    goat = goats.find(g => g.id === goatId);
-    goatIdx = goats.findIndex(g => g.id === goatId);
-    renderPage();
-  } catch (err) {
-    alert(err.message || 'Abstimmen fehlgeschlagen.');
-  }
+function doVote() {
+  if (getVotedId() !== null) return;
+  goat.votes++;
+  setVotedId(goat.id);
+  saveGoatData();
+  document.getElementById('vote-btn').className = 'vote-btn voted';
+  document.getElementById('vote-btn').textContent = '♥ Du hast gewählt';
+  document.getElementById('vote-btn').disabled = true;
 }
 </script>
 </body>
