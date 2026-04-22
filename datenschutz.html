@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Datenschutz</title>
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <div class="page-title">🔒 Datenschutz</div>
+  <p class="section-sub">Informationen zur Verarbeitung von Daten in der Schulziegen-App.</p>
+
+  <div style="display:grid;gap:18px">
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">1. Worum geht es auf dieser Seite?</h2>
+      <p>Diese App stellt die Schulziegen vor und bietet interaktive Funktionen wie Voting, Memory, Quiz und Ranglisten.</p>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">2. Welche Daten werden genutzt?</h2>
+      <p>In der App können folgende Daten verarbeitet werden:</p>
+      <ul>
+        <li>ein selbst gewählter Spielername für Ranglisten und Spiele</li>
+        <li>Spielergebnisse aus Memory und Quiz</li>
+        <li>abgegebene Stimmen beim Voting</li>
+        <li>technische Informationen, die nötig sind, damit die App funktioniert</li>
+      </ul>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">3. Lokale Speicherung im Browser</h2>
+      <p>Die App nutzt den lokalen Speicher deines Browsers (localStorage). Dort werden zum Beispiel gespeichert:</p>
+      <ul>
+        <li>dein Spielername</li>
+        <li>ob du deinen Namen bereits bestätigt hast</li>
+        <li>ein technischer Schlüssel für Abstimmungen</li>
+        <li>welche Ziege du gewählt hast</li>
+        <li>ob ein Admin eingeloggt ist</li>
+      </ul>
+      <p>Diese Informationen werden auf deinem Gerät gespeichert und helfen dabei, dass die App für dich richtig funktioniert.</p>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">4. Ranglisten</h2>
+      <p>Wenn du Memory oder Quiz spielst, können dein Spielername und dein Ergebnis in einer Rangliste gespeichert werden. Dazu gehören zum Beispiel:</p>
+      <ul>
+        <li>dein Spielername</li>
+        <li>dein Ergebnis</li>
+        <li>die Anzahl der Punkte oder Züge</li>
+        <li>der Zeitpunkt des Eintrags</li>
+      </ul>
+      <p>Diese Daten werden nur dafür genutzt, die Ranglisten der App anzuzeigen.</p>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">5. Voting</h2>
+      <p>Beim Abstimmen wird ein technischer, anonymer Schlüssel verwendet. Dadurch kann die App erkennen, ob auf einem Gerät bereits abgestimmt wurde oder eine Stimme geändert wird. Ein direkter Rückschluss auf eine Person ist darüber nicht vorgesehen.</p>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">6. Zweck der Datenverarbeitung</h2>
+      <p>Die Daten werden nur verarbeitet, damit die Funktionen der App möglich sind, insbesondere:</p>
+      <ul>
+        <li>Darstellung der Ziegen</li>
+        <li>Durchführung von Voting, Memory und Quiz</li>
+        <li>Anzeige von Ranglisten</li>
+        <li>Verwaltung der Inhalte im Adminbereich</li>
+      </ul>
+    </section>
+
+    <section style="padding:16px;border:1px solid var(--clr-border);border-radius:16px;background:var(--clr-card)">
+      <h2 style="margin-top:0">7. Löschung von Daten</h2>
+      <p>Lokale Daten im Browser können gelöscht werden, indem die Browserdaten gelöscht werden. Online gespeicherte Ranglisten- oder Voting-Daten können im Adminbereich der App verwaltet oder gelöscht werden.</p>
+    </section>
+  </div>
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('fakten');
+</script>
+</body>
+</html>
