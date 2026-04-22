@@ -229,7 +229,8 @@ async function uploadImage() {
   });
 
   if (!res.ok) {
-    alert("Upload fehlgeschlagen");
+    const t = await res.text();
+    alert("Upload fehlgeschlagen: " + t);
     return;
   }
 
