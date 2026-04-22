@@ -93,7 +93,7 @@ function renderPage() {
   const adminHtml = isAdmin ? `
     <div style="margin-top:16px;padding:12px;border:1px solid #ddd;border-radius:12px">
       <input type="file" id="admin-upload" style="margin-bottom:8px">
-      <input type="password" id="admin-pw" placeholder="Passwort" style="margin-bottom:8px;width:100%">
+      
       <button onclick="uploadImage()">Bild hochladen</button>
     </div>
   ` : ``;
@@ -211,9 +211,9 @@ async function doVote() {
 
 async function uploadImage() {
   const file = document.getElementById('admin-upload').files[0];
-  const pw = document.getElementById('admin-pw').value;
+  const pw = "";
 
-  if (!file || !pw) {
+  if (!file) {
     alert("Datei + Passwort erforderlich");
     return;
   }
@@ -224,7 +224,7 @@ async function uploadImage() {
 
   const res = await fetch("https://ziegen-api.torstenbull.workers.dev/api/admin/upload-image", {
     method: "POST",
-    headers: { "X-Admin-Password": pw },
+    headers: {} ,
     body: formData
   });
 
