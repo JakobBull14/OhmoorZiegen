@@ -498,8 +498,6 @@ async function addGalleryImage() {
       throw new Error(data.error || 'Upload fehlgeschlagen.');
     }
 
-    await adminAddGoatImage(goatId, data.image_url, caption, adminPw);
-
     document.getElementById('gallery-caption').value = '';
     if (fileInput) fileInput.value = '';
     showMsg('img-msg', 'Galeriebild wurde hochgeladen und gespeichert.', 'ok');
