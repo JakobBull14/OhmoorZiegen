@@ -157,12 +157,10 @@ function renderGallery() {
   }
 
   grid.innerHTML = filtered.map(g => {
-    const ph = g.foto
-      ? `<img src="${g.foto}" alt="${g.name}" loading="lazy"
-           onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'">
-         <span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
-      : (g.photos && g.photos.length)
-        ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
+    const ph = (g.photos && g.photos.length)
+      ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
+      : g.foto
+        ? `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'"><span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
         : `<span style="font-size:3.5rem">${g.e}</span>`;
 
     const cnt = g.photos && g.photos.length > 1
@@ -172,7 +170,7 @@ function renderGallery() {
     const vt = `<div class="gc-badge">${rankIcon}❤️ ${Number(g.votes || 0)}</div>`;
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
-      <div class="goat-card-image">${ph}${cnt}${vt}</div>
+      <div class="goat-card-image">${ph}${vt}</div>
       <div class="goat-card-body">
         <div class="goat-card-name">${g.name}</div>
         <div class="goat-card-nick">${g.nick}</div>
