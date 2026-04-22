@@ -63,41 +63,42 @@ function renderPage() {
   const prevGoat = goatIdx > 0 ? goats[goatIdx - 1] : null;
   const nextGoat = goatIdx < goats.length - 1 ? goats[goatIdx + 1] : null;
 
-  // Hauptbild oben, Galerie zusätzlich darunter
-  const hauptbildHtml = goat.foto
-    ? `<div class="detail-photo" style="aspect-ratio:16/9;overflow:hidden">
-         <img src="${goat.foto}" alt="${goat.name}"
-              style="width:100%;height:100%;object-fit:cover"
-              onerror="this.parentNode.innerHTML='<span style=\'font-size:7rem\'>${goat.e}</span>'">
-       </div>`
-    : `<div class="detail-photo"><span>${goat.e}</span></div>`;
+  // Foto-Quelle ermitteln: hochgeladen → bilder/-Ordner → Emoji
+  const hauptfoto = (goat.photos && goat.photos.length)
+    ? goat.photos[0]
+    : goat.foto || null;
 
-  const galerieHtml = (goat.photos && goat.photos.length)
-    ? `<div style="margin-top:12px">
-         <div style="font-size:13px;color:var(--clr-text-muted);margin:0 0 8px 2px">Weitere Bilder</div>
-         <div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden;border-radius:14px">
-           <div id="ph-track" style="display:flex;width:100%;height:100%;transition:transform 0.3s ease">
-             ${goat.photos.map(s => `<div style="min-width:100%;width:100%;height:100%;flex:0 0 100%"><img src="${s}" alt="${goat.name}" style="display:block;width:100%;height:100%;object-fit:cover"></div>`).join('')}
-           </div>
-           ${goat.photos.length > 1 ? `
-             <button type="button" id="phl" onclick="phNav(-1)" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:5;width:40px;height:40px;border:none;border-radius:999px;background:rgba(0,0,0,0.45);color:#fff;font-size:24px;line-height:1;cursor:pointer">‹</button>
-             <button type="button" id="phr" onclick="phNav(1)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:5;width:40px;height:40px;border:none;border-radius:999px;background:rgba(0,0,0,0.45);color:#fff;font-size:24px;line-height:1;cursor:pointer">›</button>
-             <div id="ph-dots" style="position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:5;display:flex;gap:8px">
-               ${goat.photos.map((_,i) => `<button type="button" class="ph-dot${i===0?' on':''}" onclick="phGo(${i})" style="width:10px;height:10px;border:none;border-radius:999px;background:${i===0 ? '#fff' : 'rgba(255,255,255,0.55)'};cursor:pointer"></button>`).join('')}
-             </div>
-           ` : ''}
-         </div>
-       </div>`
-    : '';
-
-  const photoHtml = hauptbildHtml + galerieHtml;
+  const photoHtml = (goat.photos && goat.photos.length)
+    ? `<div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden">
+        <div class="photo-track" id="ph-track">
+          ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
+        </div>
+        ${goat.photos.length > 1 ? `
+          <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
+          <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
+          <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
+        ` : ''}
+      </div>`
+    : goat.foto
+      ? `<div class="detail-photo" style="aspect-ratio:16/9;overflow:hidden">
+           <img src="${goat.foto}" alt="${goat.name}"
+                style="width:100%;height:100%;object-fit:contain;background:var(--clr-bg-subtle)"
+                onerror="this.parentNode.innerHTML='<span style=\'font-size:7rem\'>${goat.e}</span>'">
+         </div>`
+      : `<div class="detail-photo"><span>${goat.e}</span></div>`;
 
   document.getElementById('page-body').innerHTML = `
     <div class="detail-card">
 
       ${photoHtml}
 
-
+      ${isAdmin ? `
+      <div style="padding:10px 16px;background:var(--clr-bg-subtle);border-bottom:1px solid var(--clr-border-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--clr-text-muted)">🔐 Admin: Fotos verwalten</span>
+        <input type="file" id="file-inp" accept="image/*" multiple style="display:none" onchange="handleUpload(event)">
+        <button class="btn-secondary" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('file-inp').click()">📷 Foto hochladen</button>
+        ${goat.photos && goat.photos.length ? `<button class="btn-danger" style="font-size:12px;padding:5px 12px" onclick="deleteCurrentPhoto()">🗑️ Dieses Foto löschen</button>` : ''}
+      </div>` : ''}
 
       <div class="detail-body">
         <div class="detail-name">${goat.name}</div>
@@ -106,19 +107,19 @@ function renderPage() {
         <div class="detail-grid">
           <div>
             <div class="detail-field-label">Rasse</div>
-            <div class="detail-field-value" id="f-breed">${goat.breed}</div>
+            <div class="detail-field-value" id="f-breed" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'breed\',this)"' : ''}>${goat.breed}</div>
           </div>
           <div>
             <div class="detail-field-label">Alter</div>
-            <div class="detail-field-value" id="f-age">${goat.age}</div>
+            <div class="detail-field-value" id="f-age" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'age\',this)"' : ''}>${goat.age}</div>
           </div>
           <div>
             <div class="detail-field-label">Charakter</div>
-            <div class="detail-field-value" id="f-character">${goat.character}</div>
+            <div class="detail-field-value" id="f-character" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'character\',this)"' : ''}>${goat.character}</div>
           </div>
           <div>
             <div class="detail-field-label">Lieblingsessen</div>
-            <div class="detail-field-value" id="f-food">${goat.food}</div>
+            <div class="detail-field-value" id="f-food" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'food\',this)"' : ''}>${goat.food}</div>
           </div>
           ${goat.mother ? `<div>
             <div class="detail-field-label">Mutter</div>
@@ -126,16 +127,16 @@ function renderPage() {
           </div>` : ''}
           <div>
             <div class="detail-field-label">Besondere Fähigkeit</div>
-            <div class="detail-field-value" id="f-skill">${goat.skill}</div>
+            <div class="detail-field-value" id="f-skill" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'skill\',this)"' : ''}>${goat.skill}</div>
           </div>
         </div>
 
         <div class="detail-story">
           <div class="detail-field-label">Geschichte</div>
-          <div class="detail-field-value" id="f-story">${goat.story}</div>
+          <div class="detail-field-value" id="f-story" ${isAdmin ? 'contenteditable="true" onblur="saveField(\'story\',this)"' : ''}>${goat.story}</div>
         </div>
 
-
+        ${isAdmin ? `<div style="margin-top:12px;font-size:12px;color:var(--clr-blue)">✏️ Als Admin kannst du alle Texte direkt anklicken und bearbeiten.</div>` : ''}
       </div>
 
       <div class="detail-nav">
@@ -151,6 +152,15 @@ function renderPage() {
         </div>
       </div>
     </div>`;
+
+  // Admin-Felder stylen
+  if (isAdmin) {
+    document.querySelectorAll('[contenteditable=true]').forEach(el => {
+      el.style.cssText = 'border:1px solid var(--clr-border);border-radius:var(--radius-sm);padding:4px 6px;background:var(--clr-bg-subtle);cursor:text;outline:none';
+      el.addEventListener('focus', () => el.style.borderColor = 'var(--clr-blue)');
+      el.addEventListener('blur',  () => el.style.borderColor = 'var(--clr-border)');
+    });
+  }
 
   // Foto-Navigation init
   phIdx = 0;
@@ -192,6 +202,49 @@ function updatePhNav() {
     r.style.opacity = phIdx >= (goat.photos || []).length - 1 ? '0.45' : '1';
     r.style.cursor = phIdx >= (goat.photos || []).length - 1 ? 'default' : 'pointer';
   }
+}
+
+// ── Foto hochladen (Admin) ──
+function handleUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  if (!goat.photos) goat.photos = [];
+  let done = 0;
+  files.forEach(file => {
+    const r = new FileReader();
+    r.onload = ev => {
+      goat.photos.push(ev.target.result);
+      done++;
+      if (done === files.length) {
+        saveGoatData();
+        phIdx = goat.photos.length - 1;
+        renderPage();
+      }
+    };
+    r.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function deleteCurrentPhoto() {
+  if (!confirm('Dieses Foto löschen?')) return;
+  goat.photos.splice(phIdx, 1);
+  phIdx = Math.max(0, phIdx - 1);
+  saveGoatData();
+  renderPage();
+}
+
+// ── Felder speichern (Admin) ──
+function saveField(field, el) {
+  goat[field] = el.textContent.trim();
+  saveGoatData();
+}
+
+function saveGoatData() {
+  const allGoats = getGoats();
+  const idx = allGoats.findIndex(g => g.id === goat.id);
+  if (idx >= 0) allGoats[idx] = goat;
+  saveGoats(allGoats);
 }
 
 // ── Abstimmen ──
