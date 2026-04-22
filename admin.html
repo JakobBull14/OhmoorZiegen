@@ -73,7 +73,7 @@
       </div>
 
       <div class="admin-section">
-        <div class="admin-section-title">🖼️ Bilder verwalten</div>
+        <div class="admin-section-title">🖼️ Hauptbild verwalten</div>
         <div class="f-group">
           <label>Ziege auswählen</label>
           <select id="img-goat-sel" onchange="loadImageManager()"></select>
@@ -90,30 +90,8 @@
               <button class="btn-primary" onclick="saveMainImage()">Hauptbild speichern</button>
             </div>
           </div>
-
-          <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
-            <div style="font-weight:700;margin-bottom:8px">Galeriebild hinzufügen</div>
-            <div class="f-group">
-              <label>Bild-URL</label>
-              <input id="gallery-url" placeholder="https://... oder /OhmoorZiegen/bilder/...">
-            </div>
-            <div class="f-group" style="margin-top:10px">
-              <label>Beschriftung</label>
-              <input id="gallery-caption" placeholder="z.B. beim Füttern">
-            </div>
-            <div class="btn-row" style="margin-top:10px">
-              <button class="btn-primary" onclick="addGalleryImage()">Galeriebild speichern</button>
-            </div>
-          </div>
-
-          <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
-            <div style="font-weight:700;margin-bottom:8px">Gespeicherte Galeriebilder</div>
-            <div id="gallery-count" style="font-size:12px;color:var(--clr-text-muted);margin-bottom:8px"></div>
-            <div id="gallery-list"></div>
-          </div>
         </div>
         <div id="img-msg"></div>
-        <p class="section-sub" style="margin-top:12px;margin-bottom:0">Aktuell verwalten wir Bilder zentral über Bild-URLs. Den direkten Datei-Upload in die Cloud bauen wir danach als eigenen Schritt.</p>
       </div>
 
       <div class="admin-section">
@@ -223,7 +201,6 @@
         </div>
       </div>
 
-
     </div>
   </div>
 </main>
@@ -234,7 +211,6 @@
 buildNav('admin');
 let adminPw = '';
 let cloudGoats = [];
-let currentGallery = [];
 
 function showMsg(id, text, type='ok') {
   const el = document.getElementById(id);
@@ -242,9 +218,9 @@ function showMsg(id, text, type='ok') {
   el.innerHTML = `<div class="auth-msg ${type==='err'?'err':'ok'}">${escHtml(text)}</div>`;
 }
 
-function doLogin() {
+async function doLogin() {
   const pw = document.getElementById('pw-input').value;
-  if (adminLogin(pw)) {
+  if (await adminLogin(pw)) {
     adminPw = pw;
     showAdmin();
   } else {
@@ -321,7 +297,6 @@ async function loadCloudGoats() {
     fillEditForm();
     await loadImageManager();
   } else {
-    document.getElementById('gallery-list').innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Ziegen vorhanden.</p>';
   }
 }
 
@@ -405,45 +380,6 @@ async function loadImageManager() {
   if (!goat) return;
   document.getElementById('main-image-url').value = goat.foto || '';
   renderMainImagePreview(goat.foto || '');
-
-  currentGallery = Array.isArray(goat.photos)
-    ? goat.photos.map((url, i) => ({
-        id: '',
-        image_url: url,
-        caption: '',
-        _local_index: i
-      }))
-    : [];
-
-  renderGalleryList();
-}
-
-function renderGalleryList() {
-  const box = document.getElementById('gallery-list');
-  const countBox = document.getElementById('gallery-count');
-  const items = Array.isArray(currentGallery) ? currentGallery.filter(item => item && item.image_url) : [];
-
-  if (countBox) {
-    countBox.textContent = `${items.length} Bild${items.length !== 1 ? 'er' : ''} geladen`;
-  }
-
-  if (!items.length) {
-    box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Galeriebilder gespeichert.</p>';
-    updateGalleryUploadState();
-    return;
-  }
-
-  box.innerHTML = items.map(img => `
-    <div style="display:grid;grid-template-columns:80px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
-      <img src="${escHtml(img.image_url || '')}" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:10px;background:#fff" onerror="this.style.display='none'">
-      <div>
-        <div style="font-size:13px;font-weight:600">${escHtml(img.caption || 'Ohne Beschriftung')}</div>
-        <div style="font-size:12px;color:var(--clr-text-muted);word-break:break-all">${escHtml(img.image_url || '')}</div>
-      </div>
-      <div style="font-size:12px;color:var(--clr-text-muted)">nur Anzeige</div>
-    </div>`).join('');
-
-  updateGalleryUploadState();
 }
 
 async function saveMainImage() {
@@ -461,21 +397,7 @@ async function saveMainImage() {
   }
 }
 
-async function addGalleryImage() {
-  const goatId = Number(document.getElementById('img-goat-sel').value);
-  const imageUrl = document.getElementById('gallery-url').value.trim();
-  const caption = document.getElementById('gallery-caption').value.trim();
-  if (!goatId || !imageUrl) { showMsg('img-msg', 'Bitte Ziege und Bild-URL angeben.', 'err'); return; }
-  try {
-    await adminAddGoatImage(goatId, imageUrl, caption, adminPw);
-    document.getElementById('gallery-url').value = '';
-    document.getElementById('gallery-caption').value = '';
-    showMsg('img-msg', 'Galeriebild wurde gespeichert.', 'ok');
-    await loadImageManager();
-  } catch (err) {
-    showMsg('img-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
-  }
-}
+async 
 
 async function deleteGalleryImage(id) {
   if (!confirm('Dieses Galeriebild wirklich löschen?')) return;
@@ -573,7 +495,6 @@ async function doResetScores() {
   }
 }
 
-
 async function changeAdminPassword() {
   const oldPw = document.getElementById('pw-old').value;
   const newPw = document.getElementById('pw-new').value;
@@ -627,7 +548,6 @@ async function changeAdminPassword() {
     showMsg('pw-msg', 'Passwort konnte nicht geändert werden.', 'err');
   }
 }
-
 
 </script>
 </body>
