@@ -157,10 +157,12 @@ function renderGallery() {
   }
 
   grid.innerHTML = filtered.map(g => {
-    const ph = (g.photos && g.photos.length)
-      ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
-      : g.foto
-        ? `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'"><span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
+    const ph = g.foto
+      ? `<img src="${g.foto}" alt="${g.name}" loading="lazy"
+           onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'">
+         <span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
+      : (g.photos && g.photos.length)
+        ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
         : `<span style="font-size:3.5rem">${g.e}</span>`;
 
     const cnt = g.photos && g.photos.length > 1
