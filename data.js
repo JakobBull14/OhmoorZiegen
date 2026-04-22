@@ -103,7 +103,10 @@ async function getGoatsFromApi() {
 
 async function fetchGoatImages(goatId) {
   try {
-    const res = await fetch(API_BASE + '/api/goat-images?goat_id=' + goatId);
+    const res = await fetch(
+      API_BASE + '/api/goat-images?goat_id=' + goatId + '&t=' + Date.now(),
+      { cache: 'no-store' }
+    );
     return await res.json();
   } catch (e) {
     return [];
