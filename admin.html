@@ -94,15 +94,18 @@
           <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
             <div style="font-weight:700;margin-bottom:8px">Galeriebild hinzufügen</div>
             <div class="f-group">
-              <label>Bild-URL</label>
-              <input id="gallery-url" placeholder="https://... oder /OhmoorZiegen/bilder/...">
+              <label>Bild aus Handy / Computer auswählen</label>
+              <input id="gallery-file" type="file" accept="image/jpeg,image/png,image/webp,image/jpg">
             </div>
             <div class="f-group" style="margin-top:10px">
               <label>Beschriftung</label>
               <input id="gallery-caption" placeholder="z.B. beim Füttern">
             </div>
+            <div id="gallery-limit-note" style="font-size:12px;color:var(--clr-text-muted);margin-top:8px">
+              Maximal 5 Zusatzbilder pro Ziege.
+            </div>
             <div class="btn-row" style="margin-top:10px">
-              <button class="btn-primary" onclick="addGalleryImage()">Galeriebild speichern</button>
+              <button class="btn-primary" id="gallery-upload-btn" onclick="addGalleryImage()">Bild hochladen</button>
             </div>
           </div>
 
@@ -406,12 +409,14 @@ async function loadImageManager() {
   renderMainImagePreview(goat.foto || '');
   currentGallery = await fetchGoatImages(goatId);
   renderGalleryList();
+  updateGalleryUploadState();
 }
 
 function renderGalleryList() {
   const box = document.getElementById('gallery-list');
   if (!currentGallery.length) {
     box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Galeriebilder gespeichert.</p>';
+    updateGalleryUploadState();
     return;
   }
   box.innerHTML = currentGallery.map(img => `
@@ -423,6 +428,7 @@ function renderGalleryList() {
       </div>
       <button class="btn-danger" style="padding:6px 10px;font-size:12px" onclick="deleteGalleryImage(${img.id})">Löschen</button>
     </div>`).join('');
+  updateGalleryUploadState();
 }
 
 async function saveMainImage() {
@@ -440,19 +446,66 @@ async function saveMainImage() {
   }
 }
 
+
+function updateGalleryUploadState() {
+  const btn = document.getElementById('gallery-upload-btn');
+  const note = document.getElementById('gallery-limit-note');
+  if (!btn || !note) return;
+
+  const limitReached = currentGallery.length >= 5;
+  btn.disabled = limitReached;
+  btn.style.opacity = limitReached ? '0.55' : '1';
+  btn.style.cursor = limitReached ? 'not-allowed' : 'pointer';
+  btn.textContent = limitReached ? 'Max. 5 Bilder erreicht' : 'Bild hochladen';
+  note.textContent = limitReached
+    ? 'Maximal 5 Zusatzbilder erreicht. Bitte zuerst ein Bild löschen.'
+    : `Noch ${5 - currentGallery.length} von 5 Zusatzbildern möglich.`;
+}
+
 async function addGalleryImage() {
   const goatId = Number(document.getElementById('img-goat-sel').value);
-  const imageUrl = document.getElementById('gallery-url').value.trim();
+  const fileInput = document.getElementById('gallery-file');
+  const file = fileInput?.files?.[0] || null;
   const caption = document.getElementById('gallery-caption').value.trim();
-  if (!goatId || !imageUrl) { showMsg('img-msg', 'Bitte Ziege und Bild-URL angeben.', 'err'); return; }
+
+  if (!goatId) return;
+  if (currentGallery.length >= 5) {
+    showMsg('img-msg', 'Maximal 5 Zusatzbilder pro Ziege.', 'err');
+    updateGalleryUploadState();
+    return;
+  }
+  if (!file) {
+    showMsg('img-msg', 'Bitte zuerst ein Bild auswählen.', 'err');
+    return;
+  }
+
   try {
-    await adminAddGoatImage(goatId, imageUrl, caption, adminPw);
-    document.getElementById('gallery-url').value = '';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('goat_id', String(goatId));
+    formData.append('caption', caption);
+
+    const res = await fetch(API_BASE + '/api/admin/upload-image', {
+      method: 'POST',
+      headers: {
+        'X-Admin-Password': adminPw
+      },
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Upload fehlgeschlagen.');
+    }
+
+    await adminAddGoatImage(goatId, data.image_url, caption, adminPw);
+
     document.getElementById('gallery-caption').value = '';
-    showMsg('img-msg', 'Galeriebild wurde gespeichert.', 'ok');
+    if (fileInput) fileInput.value = '';
+    showMsg('img-msg', 'Galeriebild wurde hochgeladen und gespeichert.', 'ok');
     await loadImageManager();
   } catch (err) {
-    showMsg('img-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
+    showMsg('img-msg', err.message || 'Upload fehlgeschlagen.', 'err');
   }
 }
 
