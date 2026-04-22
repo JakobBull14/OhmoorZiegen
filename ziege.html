@@ -63,47 +63,34 @@ function renderPage() {
   const prevGoat = goatIdx > 0 ? goats[goatIdx - 1] : null;
   const nextGoat = goatIdx < goats.length - 1 ? goats[goatIdx + 1] : null;
 
-  // Hauptbild immer oben, Galerie zusätzlich darunter
-  const hauptbildHtml = goat.foto
-    ? `<div class="detail-photo" style="aspect-ratio:16/9;overflow:hidden">
-         <img src="${goat.foto}" alt="${goat.name}"
-              style="width:100%;height:100%;object-fit:cover"
-              onerror="this.parentNode.innerHTML='<span style=\'font-size:7rem\'>${goat.e}</span>'">
-       </div>`
-    : `<div class="detail-photo"><span>${goat.e}</span></div>`;
+  // Foto-Quelle ermitteln: hochgeladen → bilder/-Ordner → Emoji
+  const hauptfoto = (goat.photos && goat.photos.length)
+    ? goat.photos[0]
+    : goat.foto || null;
 
-  const galerieHtml = (goat.photos && goat.photos.length)
-    ? `<div style="margin-top:12px">
-         <div style="font-size:13px;color:var(--clr-text-muted);margin:0 0 8px 2px">Weitere Bilder</div>
-         <div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden">
-           <div class="photo-track" id="ph-track">
-             ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
-           </div>
-           ${goat.photos.length > 1 ? `
-             <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
-             <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
-             <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
-           ` : ''}
-         </div>
-       </div>`
-    : '';
-
-  const photoHtml = hauptbildHtml + galerieHtml;
-
-  const adminHtml = isAdmin ? `
-    <div style="margin-top:16px;padding:12px;border:1px solid #ddd;border-radius:12px">
-      <input type="file" id="admin-upload" style="margin-bottom:8px">
-      
-      <button onclick="uploadImage()">Bild hochladen</button>
-    </div>
-  ` : ``;
+  const photoHtml = (goat.photos && goat.photos.length)
+    ? `<div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden">
+        <div class="photo-track" id="ph-track">
+          ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
+        </div>
+        ${goat.photos.length > 1 ? `
+          <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
+          <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
+          <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
+        ` : ''}
+      </div>`
+    : goat.foto
+      ? `<div class="detail-photo" style="aspect-ratio:16/9;overflow:hidden">
+           <img src="${goat.foto}" alt="${goat.name}"
+                style="width:100%;height:100%;object-fit:cover"
+                onerror="this.parentNode.innerHTML='<span style=\'font-size:7rem\'>${goat.e}</span>'">
+         </div>`
+      : `<div class="detail-photo"><span>${goat.e}</span></div>`;
 
   document.getElementById('page-body').innerHTML = `
     <div class="detail-card">
 
       ${photoHtml}
-
-      ${adminHtml}
 
 
 
@@ -207,32 +194,3 @@ async function doVote() {
 </script>
 </body>
 </html>
-
-
-async function uploadImage() {
-  const file = document.getElementById('admin-upload').files[0];
-  const pw = "";
-
-  if (!file) {
-    alert("Datei + Passwort erforderlich");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("goat_id", goat.id);
-
-  const res = await fetch("https://ziegen-api.torstenbull.workers.dev/api/admin/upload-image", {
-    method: "POST",
-    headers: {} ,
-    body: formData
-  });
-
-  if (!res.ok) {
-    const t = await res.text();
-    alert("Upload fehlgeschlagen: " + t);
-    return;
-  }
-
-  location.reload();
-}
