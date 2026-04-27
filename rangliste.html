@@ -316,7 +316,7 @@ function renderQuizFull() {
     <table class="leaderboard-table">
       <thead>
         <tr>
-          <th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Quote</th><th>Datum</th>
+          <th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Quote</th><th>Datum</th>${isAdminLoggedIn() ? '<th></th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -329,7 +329,8 @@ function renderQuizFull() {
             <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px;color:var(--clr-blue);font-weight:800">(Du)</span>' : ''}</td>
             <td class="lb-score">${s.score}/${s.total}</td>
             <td style="color:var(--clr-text-muted);font-size:12px">${percent}%</td>
-            <td class="lb-time">${escHtml(formatPodiumDate(s.created_at) || s.created_at || '')}</td>
+            <td class="lb-time">${escHtml(s.date_label || s.created_at || '')}</td>
+          ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteEntry(${s.id})">Löschen</button></td>` : ''}
           </tr>`;
         }).join('')}
       </tbody>
