@@ -186,6 +186,18 @@ html[data-dark] .top3-mini-meta{
     z-index:999;
   ">↑</button>
 
+  <div id="admin-pw-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px">
+    <div style="width:min(360px,100%);border-radius:18px;padding:18px;background:var(--clr-card);border:1px solid var(--clr-border);box-shadow:0 18px 50px rgba(0,0,0,0.18)">
+      <div style="font-size:18px;font-weight:800;margin-bottom:10px;color:var(--clr-text)">Admin-Passwort</div>
+      <input id="admin-pw-modal-input" type="password" placeholder="Passwort eingeben" style="width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--clr-border);background:var(--clr-bg);color:var(--clr-text);box-sizing:border-box">
+      <div id="admin-pw-modal-error" style="display:none;color:#b42318;font-size:12px;margin-top:8px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button class="btn-secondary" type="button" onclick="closeAdminPwModal()">Abbrechen</button>
+        <button class="btn-primary" type="button" onclick="confirmAdminPwModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -207,9 +219,16 @@ async function fetchQuizLeaderboard() {
   return await res.json();
 }
 
-function formatPodiumDate(value) {
+function formatRankingDate(value) {
   if (!value) return '';
-  return String(value).split(' ')[0].split('T')[0];
+  const d = new Date(String(value).replace(' ', 'T') + 'Z');
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString('de-DE', { day:'numeric', month:'numeric', year:'numeric' }) + ' ' +
+    d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+}
+
+function formatPodiumDate(value) {
+  return formatRankingDate(value);
 }
 
 function renderMiniTop3(containerId, data, type) {
@@ -281,7 +300,7 @@ function renderMemoryFull() {
             <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px;color:var(--clr-blue);font-weight:800">(Du)</span>' : ''}</td>
             <td class="lb-score">${s.score}</td>
             <td style="color:var(--clr-text-muted);font-size:12px">${s.pairs ?? '-'} Paare</td>
-            <td class="lb-time">${escHtml(s.date_label || s.created_at || '')}</td>
+            <td class="lb-time">${escHtml(formatRankingDate(s.created_at || s.date_label || ''))}</td>
             ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteEntry(${s.id})">Löschen</button></td>` : ''}
           </tr>`;
         }).join('')}
@@ -329,26 +348,83 @@ function renderQuizFull() {
             <td>${escHtml(s.player_name)}${isYou ? ' <span style="font-size:11px;color:var(--clr-blue);font-weight:800">(Du)</span>' : ''}</td>
             <td class="lb-score">${s.score}/${s.total}</td>
             <td style="color:var(--clr-text-muted);font-size:12px">${percent}%</td>
-            <td class="lb-time">${escHtml(s.date_label || s.created_at || '')}</td>
-          ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteEntry(${s.id})">Löschen</button></td>` : ''}
+            <td class="lb-time">${escHtml(formatRankingDate(s.created_at))}</td>
+            ${isAdminLoggedIn() ? `<td><button class="btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteQuizEntry(${s.id})">Löschen</button></td>` : ''}
           </tr>`;
         }).join('')}
       </tbody>
     </table>`;
 }
 
+
+let pendingAdminPwAction = null;
+
+function askAdminPassword(action) {
+  pendingAdminPwAction = action;
+  const modal = document.getElementById('admin-pw-modal');
+  const input = document.getElementById('admin-pw-modal-input');
+  const error = document.getElementById('admin-pw-modal-error');
+  if (!modal || !input || !error) return;
+  input.value = '';
+  error.style.display = 'none';
+  error.textContent = '';
+  modal.style.display = 'flex';
+  setTimeout(() => input.focus(), 20);
+}
+
+function closeAdminPwModal() {
+  const modal = document.getElementById('admin-pw-modal');
+  if (modal) modal.style.display = 'none';
+  pendingAdminPwAction = null;
+}
+
+async function confirmAdminPwModal() {
+  const input = document.getElementById('admin-pw-modal-input');
+  const error = document.getElementById('admin-pw-modal-error');
+  const pw = input ? input.value : '';
+  if (!pw) {
+    if (error) {
+      error.textContent = 'Bitte Passwort eingeben.';
+      error.style.display = 'block';
+    }
+    return;
+  }
+  const action = pendingAdminPwAction;
+  closeAdminPwModal();
+  if (action) await action(pw);
+}
+
+async function deleteQuizEntry(id) {
+  if (!confirm('Diesen Quiz-Eintrag wirklich löschen?')) return;
+
+  askAdminPassword(async (adminPw) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/quiz/leaderboard/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Password': adminPw }
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `API ${res.status}`);
+
+      await loadRankings();
+    } catch (err) {
+      alert(err.message || 'Löschen fehlgeschlagen.');
+    }
+  });
+}
+
 async function deleteEntry(id) {
   if (!confirm('Diesen Ranglisten-Eintrag wirklich löschen?')) return;
 
-  const adminPw = prompt('Admin-Passwort eingeben:');
-  if (!adminPw) return;
-
-  try {
-    await deleteLeaderboardEntry(id, adminPw);
-    await loadRankings();
-  } catch (err) {
-    alert(err.message || 'Löschen fehlgeschlagen.');
-  }
+  askAdminPassword(async (adminPw) => {
+    try {
+      await deleteLeaderboardEntry(id, adminPw);
+      await loadRankings();
+    } catch (err) {
+      alert(err.message || 'Löschen fehlgeschlagen.');
+    }
+  });
 }
 
 function scrollToTop() {
@@ -367,15 +443,14 @@ window.addEventListener('load', toggleBackToTop);
 async function doReset() {
   if (!confirm('Memory-Rangliste wirklich leeren?')) return;
 
-  const adminPw = prompt('Admin-Passwort eingeben:');
-  if (!adminPw) return;
-
-  try {
-    await clearScores(adminPw);
-    await loadRankings();
-  } catch (err) {
-    alert(err.message || 'Zurücksetzen fehlgeschlagen.');
-  }
+  askAdminPassword(async (adminPw) => {
+    try {
+      await clearScores(adminPw);
+      await loadRankings();
+    } catch (err) {
+      alert(err.message || 'Zurücksetzen fehlgeschlagen.');
+    }
+  });
 }
 
 async function loadRankings() {
