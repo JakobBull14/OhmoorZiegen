@@ -135,10 +135,12 @@ function renderQuiz() {
         <span class="quiz-score-emoji">${em}</span>
         <div class="quiz-score-number">${score} / ${questions.length}</div>
         <div class="quiz-score-msg">${msg}</div>
+        <div id="quiz-save-msg" style="margin-top:12px;font-size:14px;color:var(--clr-text-muted)">Ergebnis wird gespeichert ...</div>
         <button class="btn-primary" style="margin:20px auto 0;display:block" onclick="startQuiz()">
           Nochmal spielen
         </button>
       </div>`;
+    saveQuizResult(score, questions.length);
     return;
   }
 
@@ -178,6 +180,31 @@ function answerQ(ch) {
     <button class="btn-primary" style="margin-top:14px" onclick="nextQ()">
       ${quizState.idx + 1 < quizState.questions.length ? 'Weiter →' : 'Ergebnis anzeigen'}
     </button>`;
+}
+
+async function saveQuizResult(score, total) {
+  const msg = document.getElementById('quiz-save-msg');
+  try {
+    const playerName = getDisplayName();
+    await apiRequest('/api/quiz/leaderboard', {
+      method: 'POST',
+      body: JSON.stringify({
+        player_name: playerName,
+        score: score,
+        total: total,
+        device_token: getVoterKey()
+      })
+    });
+    if (msg) {
+      msg.textContent = 'Ergebnis wurde in der Quiz-Rangliste gespeichert.';
+      msg.style.color = 'var(--clr-green)';
+    }
+  } catch (err) {
+    if (msg) {
+      msg.textContent = 'Ergebnis konnte nicht gespeichert werden.';
+      msg.style.color = '#b42318';
+    }
+  }
 }
 
 function nextQ() {
