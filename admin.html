@@ -167,6 +167,34 @@
       </div>
 
       <div class="admin-section">
+        <div class="admin-section-title">💡 Fakten verwalten</div>
+
+        <div style="font-weight:700;margin-bottom:10px">Neuen Fakt hinzufügen</div>
+
+        <div class="form-grid">
+          <div class="f-group">
+            <label>Icon</label>
+            <input id="f-icon" placeholder="z.B. 👁️">
+          </div>
+          <div class="f-group">
+            <label>Titel *</label>
+            <input id="f-title" placeholder="z.B. 360°-Blick">
+          </div>
+        </div>
+
+        <div class="f-group" style="margin-top:12px">
+          <label>Text *</label>
+          <textarea id="f-content" placeholder="Kurzer Faktentext"></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="addFact()">Fakt speichern</button>
+        </div>
+
+        <div id="facts-msg"></div>
+      </div>
+
+      <div class="admin-section">
         <div class="admin-section-title">🧾 Aktuelle Ziegen in der Cloud</div>
         <div id="goat-list-admin"></div>
       </div>
@@ -397,7 +425,6 @@ async function saveMainImage() {
   }
 }
 
-async 
 
 async function deleteGalleryImage(id) {
   if (!confirm('Dieses Galeriebild wirklich löschen?')) return;
@@ -492,6 +519,33 @@ async function doResetScores() {
     showMsg('act-msg', 'Rangliste wurde geleert.', 'ok');
   } catch (err) {
     showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
+  }
+}
+
+async function addFact() {
+  const icon = document.getElementById('f-icon').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+
+  if (!title || !content) {
+    showMsg('facts-msg', 'Titel und Text werden benötigt.', 'err');
+    return;
+  }
+
+  try {
+    await apiRequest('/api/admin/facts', {
+      method: 'POST',
+      headers: { 'X-Admin-Password': adminPw },
+      body: JSON.stringify({ icon, title, content })
+    });
+
+    document.getElementById('f-icon').value = '';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-content').value = '';
+
+    showMsg('facts-msg', 'Fakt wurde gespeichert.', 'ok');
+  } catch (err) {
+    showMsg('facts-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
   }
 }
 
