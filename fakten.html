@@ -20,25 +20,44 @@
 <script>
 buildNav('fakten');
 
-const FACTS = [
-  { i:"👁️", t:"360°-Blick",         p:"Ziegen haben rechteckige Pupillen — fast 360° Sicht, um Fressfeinde von überall zu sehen." },
-  { i:"🗣️", t:"Eigene Stimme",       p:"Jede Ziege hat ihren eigenen Stimmklang. Mutter und Kind erkennen sich am Blöken." },
-  { i:"🧠", t:"Superklug",           p:"Ziegen können komplizierte Schlösser öffnen und sich das über Jahre merken." },
-  { i:"🧭", t:"Gutes Gedächtnis",    p:"Ziegen erinnern sich jahrelang an andere Ziegen und an Menschen, die nett zu ihnen waren." },
-  { i:"🌿", t:"Wählerische Fresser", p:"Ziegen schnuppern erst und entscheiden dann — außer Olaf natürlich." },
-  { i:"😊", t:"Echte Gefühle",       p:"Ziegen können positive und negative Emotionen durch verschiedene Laute ausdrücken." },
-  { i:"🧗", t:"Kletterkünstler",     p:"Ziegen können fast senkrechte Felswände erklimmen. Ihre gespaltenen Hufe wirken wie Klettergriffe." },
-  { i:"🌍", t:"Uralt domestiziert",  p:"Ziegen gehören zu den ersten Tieren, die von Menschen gehalten wurden — vor über 10.000 Jahren." },
-  { i:"💬", t:"Dialekte",            p:"Ziegen passen ihren Blöklaut an die Gruppe an — sie entwickeln tatsächlich lokale Dialekte." },
-  { i:"🎵", t:"Musik mögen",         p:"Forschungen zeigen: Ziegen reagieren auf klassische Musik deutlich ruhiger." },
-];
+let FACTS = [];
 
-document.getElementById('facts-body').innerHTML = FACTS.map(f => `
-  <div class="fact-card">
-    <span class="fact-icon">${f.i}</span>
-    <div class="fact-title">${f.t}</div>
-    <div class="fact-text">${f.p}</div>
-  </div>`).join('');
+function renderFacts() {
+  const body = document.getElementById('facts-body');
+
+  if (!FACTS.length) {
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">💡</span>
+        <div class="empty-state-text">Noch keine Fakten vorhanden</div>
+      </div>`;
+    return;
+  }
+
+  body.innerHTML = FACTS.map(f => `
+    <div class="fact-card">
+      <span class="fact-icon">${escHtml(f.icon || '')}</span>
+      <div class="fact-title">${escHtml(f.title || '')}</div>
+      <div class="fact-text">${escHtml(f.content || '')}</div>
+    </div>`).join('');
+}
+
+async function loadFacts() {
+  try {
+    const res = await fetch(API_BASE + '/api/facts', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Fakten konnten nicht geladen werden');
+    FACTS = await res.json();
+    renderFacts();
+  } catch (e) {
+    document.getElementById('facts-body').innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">⚠️</span>
+        <div class="empty-state-text">Fakten konnten nicht geladen werden</div>
+      </div>`;
+  }
+}
+
+loadFacts();
 </script>
 </body>
 </html>
