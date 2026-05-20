@@ -74,12 +74,15 @@ function renderPage() {
 
   const galerieHtml = (goat.photos && goat.photos.length)
     ? `<div style="margin-top:12px">
-         <div style="font-size:13px;color:var(--clr-text-muted);margin:0 0 8px 2px">Weitere Bilder</div>
+         <div style="font-size:13px;color:var(--clr-text-muted);margin:0 0 8px 2px">
+           📷 ${goat.photos.length} Galeriebild${goat.photos.length !== 1 ? 'er' : ''}
+         </div>
          <div id="carousel-wrap" style="position:relative;width:100%;aspect-ratio:16/9;background:var(--clr-bg-subtle);overflow:hidden">
            <div class="photo-track" id="ph-track">
              ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
            </div>
            ${goat.photos.length > 1 ? `
+             <div id="ph-counter" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.45);color:#fff;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;pointer-events:none">1 / ${goat.photos.length}</div>
              <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
              <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
              <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
@@ -171,6 +174,8 @@ function phUpdateDisplay() {
   if (track) track.style.transform = `translateX(-${phIdx * 100}%)`;
   updatePhNav();
   document.querySelectorAll('.ph-dot').forEach((d, i) => d.classList.toggle('on', i === phIdx));
+  const counter = document.getElementById('ph-counter');
+  if (counter) counter.textContent = `${phIdx + 1} / ${(goat.photos || []).length}`;
 }
 
 function updatePhNav() {
