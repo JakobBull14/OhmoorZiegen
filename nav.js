@@ -20,6 +20,7 @@ function buildNav(activePage) {
     { id:'memory',    href:'/OhmoorZiegen/memory.html',      icon:'🃏', label:'Memory'    },
     { id:'rangliste', href:'/OhmoorZiegen/rangliste.html',   icon:'🏆', label:'Rangliste' },
     { id:'fakten',    href:'/OhmoorZiegen/fakten.html',      icon:'💡', label:'Fakten'    },
+    { id:'feedback',  href:'/OhmoorZiegen/feedback.html',    icon:'💬', label:'Feedback'  },
   ];
 
   // Alle Seiten-Links (Desktop-Tabs + Drawer)
