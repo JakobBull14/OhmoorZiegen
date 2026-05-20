@@ -5,17 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Admin</title>
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
+<style>
+.atab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--clr-card);
+  border: 1px solid var(--clr-border);
+  border-radius: 22px;
+  padding: 5px;
+  margin-bottom: 28px;
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(0,0,0,.10);
+}
+.atab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 10px;
+  border: none;
+  border-radius: 17px;
+  background: transparent;
+  color: var(--clr-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, color .18s, box-shadow .18s, transform .1s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.atab-icon { font-size: 17px; line-height: 1; }
+.atab-btn.active {
+  background: var(--clr-blue);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(26,115,232,.35);
+}
+.atab-btn:hover:not(.active) {
+  background: rgba(128,128,128,.10);
+  color: var(--clr-text);
+}
+.atab-btn:active { transform: scale(.97); }
+.atab-panel { display: none; }
+.atab-panel.active {
+  display: block;
+  animation: atab-in .16s ease;
+}
+@keyframes atab-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 360px) {
+  .atab-label { display: none; }
+  .atab-icon  { font-size: 22px; }
+}
+</style>
 </head>
 <body>
 <div id="nav-root"></div>
 <main class="app-main">
+
+  <!-- ── LOGIN ── -->
   <div id="login-screen">
     <div style="max-width:360px;margin:0 auto">
       <div class="page-title">🔐 Admin-Login</div>
       <p class="section-sub">Dieser Bereich ist nur für Lehrerinnen und Lehrer.</p>
       <div class="form-group">
         <label class="form-label">Admin-Passwort</label>
-        <input class="form-input" id="pw-input" type="password" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter')doLogin()">
+        <input class="form-input" id="pw-input" type="password" placeholder="Passwort eingeben"
+               onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn-primary btn-primary-full" onclick="doLogin()">Anmelden</button>
       <div class="auth-msg" id="login-msg"></div>
@@ -25,221 +85,242 @@
     </div>
   </div>
 
+  <!-- ── ADMIN ── -->
   <div id="admin-screen" class="hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px">
       <div class="page-title" style="margin-bottom:0">🔐 Admin-Bereich</div>
       <button class="btn-danger" onclick="doLogout()">Abmelden</button>
     </div>
 
-    <div class="admin-badge" style="margin-bottom:28px">
-      ✓ Ziegen, Bilder, Abstimmung, Rangliste und Quiz werden zentral online verwaltet.
+    <!-- TAB-LEISTE -->
+    <div class="atab-bar">
+      <button class="atab-btn active" id="tab-btn-ziegen" onclick="switchTab('ziegen')">
+        <span class="atab-icon">🐐</span>
+        <span class="atab-label">Ziegen</span>
+      </button>
+      <button class="atab-btn" id="tab-btn-inhalte" onclick="switchTab('inhalte')">
+        <span class="atab-icon">📋</span>
+        <span class="atab-label">Inhalte</span>
+      </button>
+      <button class="atab-btn" id="tab-btn-system" onclick="switchTab('system')">
+        <span class="atab-icon">⚙️</span>
+        <span class="atab-label">System</span>
+      </button>
     </div>
 
-    <div class="admin-wrap">
-      <div class="admin-section">
-        <div class="admin-section-title">✏️ Bestehende Ziege bearbeiten</div>
-        <div class="f-group">
-          <label>Ziege auswählen</label>
-          <select id="edit-sel" onchange="fillEditForm()"></select>
-        </div>
-        <div class="form-grid">
-          <div class="f-group"><label>Name *</label><input id="e-name"></div>
-          <div class="f-group"><label>Spitzname</label><input id="e-nick"></div>
-          <div class="f-group"><label>Rasse</label><input id="e-breed"></div>
-          <div class="f-group"><label>Alter</label><input id="e-age"></div>
-          <div class="f-group"><label>Charakter</label><input id="e-char"></div>
-          <div class="f-group"><label>Lieblingsessen</label><input id="e-food"></div>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Geschichte</label>
-          <textarea id="e-story"></textarea>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Besondere Fähigkeit</label>
-          <input id="e-skill">
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Elternteil</label>
-          <select id="e-mother"></select>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Hauptbild-URL</label>
-          <input id="e-main-image" placeholder="/OhmoorZiegen/bilder/Olaf.jpeg oder https://...">
-        </div>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="saveEditGoat()">Änderungen speichern</button>
-        </div>
-        <div id="edit-msg"></div>
-      </div>
+    <!-- ════════════ TAB: ZIEGEN ════════════ -->
+    <div class="atab-panel active" id="tab-ziegen">
+      <div class="admin-wrap">
 
-      <div class="admin-section">
-        <div class="admin-section-title">🖼️ Hauptbild verwalten</div>
-        <div class="f-group">
-          <label>Ziege auswählen</label>
-          <select id="img-goat-sel" onchange="loadImageManager()"></select>
+        <div class="admin-section">
+          <div class="admin-section-title">✏️ Ziege bearbeiten</div>
+          <div class="f-group">
+            <label>Ziege auswählen</label>
+            <select id="edit-sel" onchange="fillEditForm()"></select>
+          </div>
+          <div class="form-grid">
+            <div class="f-group"><label>Name *</label><input id="e-name"></div>
+            <div class="f-group"><label>Spitzname</label><input id="e-nick"></div>
+            <div class="f-group"><label>Rasse</label><input id="e-breed"></div>
+            <div class="f-group"><label>Alter</label><input id="e-age"></div>
+            <div class="f-group"><label>Charakter</label><input id="e-char"></div>
+            <div class="f-group"><label>Lieblingsessen</label><input id="e-food"></div>
+          </div>
+          <div class="f-group" style="margin-top:12px">
+            <label>Geschichte</label>
+            <textarea id="e-story"></textarea>
+          </div>
+          <div class="f-group" style="margin-top:12px">
+            <label>Besondere Fähigkeit</label>
+            <input id="e-skill">
+          </div>
+          <div class="f-group" style="margin-top:12px">
+            <label>Elternteil</label>
+            <select id="e-mother"></select>
+          </div>
+          <div class="f-group" style="margin-top:12px">
+            <label>Hauptbild-URL</label>
+            <input id="e-main-image" placeholder="/OhmoorZiegen/bilder/Olaf.jpeg oder https://...">
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" onclick="saveEditGoat()">Änderungen speichern</button>
+          </div>
+          <div id="edit-msg"></div>
         </div>
-        <div style="display:grid;gap:12px">
-          <div style="padding:12px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
-            <div style="font-weight:700;margin-bottom:8px">Hauptbild</div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">🖼️ Hauptbild verwalten</div>
+          <div class="f-group">
+            <label>Ziege auswählen</label>
+            <select id="img-goat-sel" onchange="loadImageManager()"></select>
+          </div>
+          <div style="padding:14px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
+            <div style="font-weight:700;margin-bottom:10px">Hauptbild</div>
             <div class="f-group">
               <label>Bild-URL</label>
               <input id="main-image-url" placeholder="/OhmoorZiegen/bilder/Name.jpeg oder https://...">
             </div>
             <div id="main-image-preview" style="margin-top:10px"></div>
-            <div class="btn-row" style="margin-top:10px">
+            <div class="btn-row" style="margin-top:12px">
               <button class="btn-primary" onclick="saveMainImage()">Hauptbild speichern</button>
             </div>
           </div>
-        </div>
-        <div id="img-msg"></div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">➕ Neue Ziege hinzufügen</div>
-        <div class="form-grid">
-          <div class="f-group"><label>Name *</label><input id="a-name" placeholder="z.B. Frieda"></div>
-          <div class="f-group"><label>Spitzname</label><input id="a-nick"></div>
-          <div class="f-group"><label>Rasse</label><input id="a-breed" placeholder="z.B. Zwergziege"></div>
-          <div class="f-group"><label>Alter</label><input id="a-age" placeholder="z.B. 3 Jahre"></div>
-          <div class="f-group"><label>Charakter</label><input id="a-char"></div>
-          <div class="f-group"><label>Lieblingsessen</label><input id="a-food"></div>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Geschichte</label>
-          <textarea id="a-story" placeholder="Was macht diese Ziege besonders?"></textarea>
-        </div>
-        <div class="f-group" style="margin-top:12px">
-          <label>Besondere Fähigkeit</label>
-          <input id="a-skill">
-        </div>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="addGoat()">Ziege hinzufügen</button>
-        </div>
-        <div id="add-msg"></div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">🗑️ Ziege entfernen</div>
-        <div class="f-group">
-          <label>Ziege auswählen</label>
-          <select id="del-sel"></select>
-        </div>
-        <div class="btn-row">
-          <button class="btn-danger" onclick="removeGoat()">Ausgewählte Ziege entfernen</button>
-        </div>
-        <div id="del-msg"></div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">❓ Quiz verwalten</div>
-
-        <div style="margin-bottom:16px">
-          <button class="btn-primary" onclick="loadQuizAdmin()">Quiz neu laden</button>
+          <div id="img-msg"></div>
         </div>
 
-        <div id="quiz-list"></div>
-
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
-          <div style="font-weight:700;margin-bottom:10px">Neue Frage hinzufügen</div>
-
-          <div class="f-group"><label>Frage</label><input id="q-question"></div>
-          <div class="f-group"><label>A</label><input id="q-a"></div>
-          <div class="f-group"><label>B</label><input id="q-b"></div>
-          <div class="f-group"><label>C</label><input id="q-c"></div>
-          <div class="f-group"><label>D</label><input id="q-d"></div>
-
-          <div class="f-group">
-            <label>Richtige Antwort</label>
-            <select id="q-correct">
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
-              <option value="D">D</option>
-            </select>
-          </div>
-
-          <div class="btn-row">
-            <button class="btn-primary" onclick="addQuizQuestion()">Frage speichern</button>
-          </div>
-
-          <div id="quiz-msg"></div>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">💡 Fakten verwalten</div>
-
-        <div style="margin-bottom:16px">
-          <button class="btn-primary" onclick="loadFactsAdmin()">Fakten neu laden</button>
-        </div>
-
-        <div id="facts-list"></div>
-
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
-          <div id="facts-form-title" style="font-weight:700;margin-bottom:10px">Neuen Fakt hinzufügen</div>
-
+        <div class="admin-section">
+          <div class="admin-section-title">➕ Neue Ziege hinzufügen</div>
           <div class="form-grid">
-            <div class="f-group">
-              <label>Icon</label>
-              <input id="f-icon" placeholder="z.B. 👁️">
-            </div>
-            <div class="f-group">
-              <label>Titel *</label>
-              <input id="f-title" placeholder="z.B. 360°-Blick">
-            </div>
+            <div class="f-group"><label>Name *</label><input id="a-name" placeholder="z.B. Frieda"></div>
+            <div class="f-group"><label>Spitzname</label><input id="a-nick"></div>
+            <div class="f-group"><label>Rasse</label><input id="a-breed" placeholder="z.B. Zwergziege"></div>
+            <div class="f-group"><label>Alter</label><input id="a-age" placeholder="z.B. 3 Jahre"></div>
+            <div class="f-group"><label>Charakter</label><input id="a-char"></div>
+            <div class="f-group"><label>Lieblingsessen</label><input id="a-food"></div>
           </div>
-
           <div class="f-group" style="margin-top:12px">
-            <label>Text *</label>
-            <textarea id="f-content" placeholder="Kurzer Faktentext"></textarea>
+            <label>Geschichte</label>
+            <textarea id="a-story" placeholder="Was macht diese Ziege besonders?"></textarea>
           </div>
-
-          <div class="btn-row">
-            <button class="btn-primary" id="f-save-btn" onclick="addFact()">Fakt speichern</button>
-            <button class="btn-danger hidden" id="f-cancel-btn" onclick="cancelEditFact()">Abbrechen</button>
-          </div>
-
-          <div id="facts-msg"></div>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">🧾 Aktuelle Ziegen in der Cloud</div>
-        <div id="goat-list-admin"></div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">⚙️ Weitere Aktionen</div>
-        <div class="btn-row">
-          <button class="btn-danger" onclick="doResetVotes()">Alle Abstimmungs-Stimmen zurücksetzen</button>
-          <button class="btn-danger" onclick="doResetScores()">Rangliste leeren</button>
-        </div>
-        <div id="act-msg"></div>
-      </div>
-      <div class="admin-section">
-        <div class="admin-section-title">🔒 Sicherheit</div>
-        <div style="max-width:360px;display:grid;gap:10px">
-          <div class="f-group">
-            <label>Altes Passwort</label>
-            <input id="pw-old" type="password" placeholder="Altes Passwort eingeben">
-          </div>
-          <div class="f-group">
-            <label>Neues Passwort</label>
-            <input id="pw-new" type="password" placeholder="Mindestens 8 Zeichen">
-          </div>
-          <div class="f-group">
-            <label>Neues Passwort wiederholen</label>
-            <input id="pw-new2" type="password" placeholder="Neues Passwort wiederholen">
+          <div class="f-group" style="margin-top:12px">
+            <label>Besondere Fähigkeit</label>
+            <input id="a-skill">
           </div>
           <div class="btn-row">
-            <button class="btn-primary" onclick="changeAdminPassword()">Passwort ändern</button>
+            <button class="btn-primary" onclick="addGoat()">Ziege hinzufügen</button>
           </div>
-          <div id="pw-msg"></div>
+          <div id="add-msg"></div>
         </div>
-      </div>
 
+        <div class="admin-section">
+          <div class="admin-section-title">🗑️ Ziege entfernen</div>
+          <div class="f-group">
+            <label>Ziege auswählen</label>
+            <select id="del-sel"></select>
+          </div>
+          <div class="btn-row">
+            <button class="btn-danger" onclick="removeGoat()">Ausgewählte Ziege entfernen</button>
+          </div>
+          <div id="del-msg"></div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">🧾 Alle Ziegen in der Cloud</div>
+          <div id="goat-list-admin"></div>
+        </div>
+
+      </div>
     </div>
-  </div>
+
+    <!-- ════════════ TAB: INHALTE ════════════ -->
+    <div class="atab-panel" id="tab-inhalte">
+      <div class="admin-wrap">
+
+        <div class="admin-section">
+          <div class="admin-section-title">❓ Quiz verwalten</div>
+          <div style="margin-bottom:16px">
+            <button class="btn-primary" onclick="loadQuizAdmin()">Quiz neu laden</button>
+          </div>
+          <div id="quiz-list"></div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+            <div style="font-weight:700;margin-bottom:10px">Neue Frage hinzufügen</div>
+            <div class="f-group"><label>Frage</label><input id="q-question"></div>
+            <div class="f-group"><label>A</label><input id="q-a"></div>
+            <div class="f-group"><label>B</label><input id="q-b"></div>
+            <div class="f-group"><label>C</label><input id="q-c"></div>
+            <div class="f-group"><label>D</label><input id="q-d"></div>
+            <div class="f-group">
+              <label>Richtige Antwort</label>
+              <select id="q-correct">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+            <div class="btn-row">
+              <button class="btn-primary" onclick="addQuizQuestion()">Frage speichern</button>
+            </div>
+            <div id="quiz-msg"></div>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">💡 Fakten verwalten</div>
+          <div style="margin-bottom:16px">
+            <button class="btn-primary" onclick="loadFactsAdmin()">Fakten neu laden</button>
+          </div>
+          <div id="facts-list"></div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+            <div id="facts-form-title" style="font-weight:700;margin-bottom:10px">Neuen Fakt hinzufügen</div>
+            <div class="form-grid">
+              <div class="f-group">
+                <label>Icon</label>
+                <input id="f-icon" placeholder="z.B. 👁️">
+              </div>
+              <div class="f-group">
+                <label>Titel *</label>
+                <input id="f-title" placeholder="z.B. 360°-Blick">
+              </div>
+            </div>
+            <div class="f-group" style="margin-top:12px">
+              <label>Text *</label>
+              <textarea id="f-content" placeholder="Kurzer Faktentext"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn-primary" id="f-save-btn" onclick="addFact()">Fakt speichern</button>
+              <button class="btn-danger hidden" id="f-cancel-btn" onclick="cancelEditFact()">Abbrechen</button>
+            </div>
+            <div id="facts-msg"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════ TAB: SYSTEM ════════════ -->
+    <div class="atab-panel" id="tab-system">
+      <div class="admin-wrap">
+
+        <div class="admin-section">
+          <div class="admin-section-title">🔄 Daten zurücksetzen</div>
+          <p style="font-size:14px;color:var(--clr-text-muted);margin:0 0 18px">
+            Achtung: Diese Aktionen können nicht rückgängig gemacht werden.
+          </p>
+          <div style="display:grid;gap:12px;max-width:400px">
+            <button class="btn-danger" onclick="doResetVotes()">Abstimmungs-Stimmen zurücksetzen</button>
+            <button class="btn-danger" onclick="doResetScores()">Rangliste leeren</button>
+          </div>
+          <div id="act-msg" style="margin-top:12px"></div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">🔒 Passwort ändern</div>
+          <div style="max-width:360px;display:grid;gap:10px">
+            <div class="f-group">
+              <label>Altes Passwort</label>
+              <input id="pw-old" type="password" placeholder="Altes Passwort eingeben">
+            </div>
+            <div class="f-group">
+              <label>Neues Passwort</label>
+              <input id="pw-new" type="password" placeholder="Mindestens 8 Zeichen">
+            </div>
+            <div class="f-group">
+              <label>Neues Passwort wiederholen</label>
+              <input id="pw-new2" type="password" placeholder="Neues Passwort wiederholen">
+            </div>
+            <div class="btn-row">
+              <button class="btn-primary" onclick="changeAdminPassword()">Passwort ändern</button>
+            </div>
+            <div id="pw-msg"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /admin-screen -->
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -251,12 +332,22 @@ let cloudGoats = [];
 let cloudFacts = [];
 let editingFactId = null;
 
-function showMsg(id, text, type='ok') {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<div class="auth-msg ${type==='err'?'err':'ok'}">${escHtml(text)}</div>`;
+/* ── Tab-Navigation ── */
+function switchTab(id) {
+  document.querySelectorAll('.atab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.atab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.getElementById('tab-btn-' + id).classList.add('active');
 }
 
+/* ── Hilfsfunktionen ── */
+function showMsg(id, text, type = 'ok') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="auth-msg ${type === 'err' ? 'err' : 'ok'}">${escHtml(text)}</div>`;
+}
+
+/* ── Login / Logout ── */
 async function doLogin() {
   const pw = document.getElementById('pw-input').value;
   if (await adminLogin(pw)) {
@@ -284,6 +375,7 @@ async function showAdmin() {
   buildNav('admin');
 }
 
+/* ── Ziegen ── */
 function renderGoatCards() {
   const list = document.getElementById('goat-list-admin');
   list.innerHTML = `
@@ -300,7 +392,9 @@ function renderGoatCards() {
 function fillSelect(id) {
   const sel = document.getElementById(id);
   if (!sel) return;
-  sel.innerHTML = cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – ' + escHtml(g.nick) : ''}</option>`).join('');
+  sel.innerHTML = cloudGoats.map(g =>
+    `<option value="${g.id}">${escHtml(g.name)}${g.nick ? ' – ' + escHtml(g.nick) : ''}</option>`
+  ).join('');
 }
 
 function fillEditForm() {
@@ -316,13 +410,12 @@ function fillEditForm() {
   document.getElementById('e-story').value = goat.story || '';
   document.getElementById('e-skill').value = goat.skill || '';
   document.getElementById('e-main-image').value = goat.foto || '';
-
-const motherSel = document.getElementById('e-mother');
-motherSel.innerHTML = `<option value="">Keine</option>` + cloudGoats
-  .filter(g => g.id !== goat.id)
-  .map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`)
-  .join('');
-motherSel.value = goat.mother_id ? String(goat.mother_id) : '';
+  const motherSel = document.getElementById('e-mother');
+  motherSel.innerHTML = `<option value="">Keine</option>` +
+    cloudGoats.filter(g => g.id !== goat.id)
+              .map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`)
+              .join('');
+  motherSel.value = goat.mother_id ? String(goat.mother_id) : '';
 }
 
 async function loadCloudGoats() {
@@ -336,7 +429,6 @@ async function loadCloudGoats() {
   if (cloudGoats.length) {
     fillEditForm();
     await loadImageManager();
-  } else {
   }
 }
 
@@ -346,16 +438,17 @@ async function addGoat() {
   try {
     await adminAddGoat({
       name,
-      nickname: document.getElementById('a-nick').value.trim() || '',
-      breed: document.getElementById('a-breed').value.trim() || '',
-      age: document.getElementById('a-age').value.trim() || '',
-      character: document.getElementById('a-char').value.trim() || '',
+      nickname:      document.getElementById('a-nick').value.trim() || '',
+      breed:         document.getElementById('a-breed').value.trim() || '',
+      age:           document.getElementById('a-age').value.trim() || '',
+      character:     document.getElementById('a-char').value.trim() || '',
       favorite_food: document.getElementById('a-food').value.trim() || '',
-      story: document.getElementById('a-story').value.trim() || '',
+      story:         document.getElementById('a-story').value.trim() || '',
       special_skill: document.getElementById('a-skill').value.trim() || '',
       main_image_url: `/OhmoorZiegen/bilder/${encodeURIComponent(name)}.jpeg`
     }, adminPw);
-    ['a-name','a-nick','a-breed','a-age','a-char','a-food','a-story','a-skill'].forEach(id => document.getElementById(id).value = '');
+    ['a-name','a-nick','a-breed','a-age','a-char','a-food','a-story','a-skill']
+      .forEach(id => document.getElementById(id).value = '');
     showMsg('add-msg', `${name} wurde online gespeichert.`, 'ok');
     await loadCloudGoats();
   } catch (err) {
@@ -370,14 +463,15 @@ async function saveEditGoat() {
   try {
     await adminUpdateGoat(id, {
       name,
-      nickname: document.getElementById('e-nick').value.trim() || '',
-      breed: document.getElementById('e-breed').value.trim() || '',
-      age: document.getElementById('e-age').value.trim() || '',
-      character: document.getElementById('e-char').value.trim() || '',
+      nickname:      document.getElementById('e-nick').value.trim() || '',
+      breed:         document.getElementById('e-breed').value.trim() || '',
+      age:           document.getElementById('e-age').value.trim() || '',
+      character:     document.getElementById('e-char').value.trim() || '',
       favorite_food: document.getElementById('e-food').value.trim() || '',
-      story: document.getElementById('e-story').value.trim() || '',
+      story:         document.getElementById('e-story').value.trim() || '',
       special_skill: document.getElementById('e-skill').value.trim() || '',
-      mother_id: document.getElementById('e-mother').value ? Number(document.getElementById('e-mother').value) : null,
+      mother_id:     document.getElementById('e-mother').value
+                       ? Number(document.getElementById('e-mother').value) : null,
       main_image_url: document.getElementById('e-main-image').value.trim() || ''
     }, adminPw);
     showMsg('edit-msg', 'Änderungen wurden gespeichert.', 'ok');
@@ -405,13 +499,16 @@ async function removeGoat() {
   }
 }
 
+/* ── Hauptbild ── */
 function renderMainImagePreview(url) {
   const box = document.getElementById('main-image-preview');
   if (!url) {
     box.innerHTML = '<p style="font-size:13px;color:var(--clr-text-muted)">Noch kein Hauptbild gesetzt.</p>';
     return;
   }
-  box.innerHTML = `<img src="${escHtml(url)}" alt="Vorschau" style="max-width:220px;max-height:180px;border-radius:14px;border:1px solid var(--clr-border);background:#fff;padding:4px" onerror="this.insertAdjacentHTML('afterend','<div style=&quot;font-size:12px;color:var(--clr-text-muted);margin-top:8px&quot;>Bild konnte nicht geladen werden.</div>');this.remove()">`;
+  box.innerHTML = `<img src="${escHtml(url)}" alt="Vorschau"
+    style="max-width:220px;max-height:180px;border-radius:14px;border:1px solid var(--clr-border);background:#fff;padding:4px"
+    onerror="this.insertAdjacentHTML('afterend','<div style=&quot;font-size:12px;color:var(--clr-text-muted);margin-top:8px&quot;>Bild konnte nicht geladen werden.</div>');this.remove()">`;
 }
 
 async function loadImageManager() {
@@ -437,7 +534,6 @@ async function saveMainImage() {
   }
 }
 
-
 async function deleteGalleryImage(id) {
   if (!confirm('Dieses Galeriebild wirklich löschen?')) return;
   try {
@@ -449,54 +545,47 @@ async function deleteGalleryImage(id) {
   }
 }
 
+/* ── Quiz ── */
 async function loadQuizAdmin() {
   const box = document.getElementById('quiz-list');
-  box.innerHTML = 'Lade Quiz...';
-
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Quiz ...</p>';
   try {
     const res = await fetch(API_BASE + '/api/quiz');
     const data = await res.json();
-
     if (!data.length) {
-      box.innerHTML = '<p>Keine Fragen vorhanden.</p>';
+      box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Keine Fragen vorhanden.</p>';
       return;
     }
-
     box.innerHTML = data.map(q => `
-      <div style="padding:10px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
-        <div style="font-weight:700">${escHtml(q.question)}</div>
+      <div style="padding:12px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
+        <div style="font-weight:700;margin-bottom:6px">${escHtml(q.question)}</div>
         <div style="font-size:13px">A: ${escHtml(q.option_a)}</div>
         <div style="font-size:13px">B: ${escHtml(q.option_b)}</div>
         <div style="font-size:13px">C: ${escHtml(q.option_c)}</div>
         <div style="font-size:13px">D: ${escHtml(q.option_d)}</div>
-        <div style="font-size:12px;color:var(--clr-text-muted)">Richtig: ${q.correct_option}</div>
-        <button class="btn-danger" style="margin-top:8px" onclick="deleteQuiz(${q.id})">Löschen</button>
+        <div style="font-size:12px;color:var(--clr-text-muted);margin-top:4px">Richtig: ${q.correct_option}</div>
+        <button class="btn-danger" style="margin-top:10px;font-size:13px;padding:6px 14px"
+                onclick="deleteQuiz(${q.id})">Löschen</button>
       </div>
     `).join('');
   } catch (err) {
-    box.innerHTML = 'Fehler beim Laden';
+    box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Fehler beim Laden.</p>';
   }
 }
 
 async function addQuizQuestion() {
   try {
     await adminAddQuizQuestion({
-      question: document.getElementById('q-question').value,
-      option_a: document.getElementById('q-a').value,
-      option_b: document.getElementById('q-b').value,
-      option_c: document.getElementById('q-c').value,
-      option_d: document.getElementById('q-d').value,
+      question:       document.getElementById('q-question').value,
+      option_a:       document.getElementById('q-a').value,
+      option_b:       document.getElementById('q-b').value,
+      option_c:       document.getElementById('q-c').value,
+      option_d:       document.getElementById('q-d').value,
       correct_option: document.getElementById('q-correct').value
     }, adminPw);
-
-    document.getElementById('q-question').value = '';
-    document.getElementById('q-a').value = '';
-    document.getElementById('q-b').value = '';
-    document.getElementById('q-c').value = '';
-    document.getElementById('q-d').value = '';
+    ['q-question','q-a','q-b','q-c','q-d'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('q-correct').value = 'A';
-
-    showMsg('quiz-msg', 'Frage gespeichert', 'ok');
+    showMsg('quiz-msg', 'Frage gespeichert.', 'ok');
     await loadQuizAdmin();
   } catch (err) {
     showMsg('quiz-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
@@ -505,7 +594,6 @@ async function addQuizQuestion() {
 
 async function deleteQuiz(id) {
   if (!confirm('Frage wirklich löschen?')) return;
-
   try {
     await adminDeleteQuizQuestion(id, adminPw);
     await loadQuizAdmin();
@@ -514,26 +602,7 @@ async function deleteQuiz(id) {
   }
 }
 
-async function doResetVotes() {
-  if (!confirm('Alle Stimmen wirklich zurücksetzen?')) return;
-  try {
-    await adminResetVotes(adminPw);
-    showMsg('act-msg', 'Alle Stimmen wurden zurückgesetzt.', 'ok');
-  } catch (err) {
-    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
-  }
-}
-
-async function doResetScores() {
-  if (!confirm('Rangliste wirklich leeren?')) return;
-  try {
-    await adminResetLeaderboard(adminPw);
-    showMsg('act-msg', 'Rangliste wurde geleert.', 'ok');
-  } catch (err) {
-    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
-  }
-}
-
+/* ── Fakten ── */
 async function loadFactsAdmin() {
   const box = document.getElementById('facts-list');
   box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Fakten ...</p>';
@@ -562,8 +631,10 @@ function renderFactsList() {
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-primary" style="font-size:13px;padding:6px 14px" onclick="startEditFact(${f.id})">Bearbeiten</button>
-        <button class="btn-danger" style="font-size:13px;padding:6px 14px" onclick="deleteFact(${f.id})">Löschen</button>
+        <button class="btn-primary" style="font-size:13px;padding:6px 14px"
+                onclick="startEditFact(${f.id})">Bearbeiten</button>
+        <button class="btn-danger" style="font-size:13px;padding:6px 14px"
+                onclick="deleteFact(${f.id})">Löschen</button>
       </div>
     </div>
   `).join('');
@@ -609,15 +680,13 @@ async function deleteFact(id) {
 }
 
 async function addFact() {
-  const icon = document.getElementById('f-icon').value.trim();
-  const title = document.getElementById('f-title').value.trim();
+  const icon    = document.getElementById('f-icon').value.trim();
+  const title   = document.getElementById('f-title').value.trim();
   const content = document.getElementById('f-content').value.trim();
-
   if (!title || !content) {
     showMsg('facts-msg', 'Titel und Text werden benötigt.', 'err');
     return;
   }
-
   try {
     if (editingFactId) {
       await apiRequest(`/api/admin/facts/${editingFactId}`, {
@@ -644,50 +713,52 @@ async function addFact() {
   }
 }
 
+/* ── System ── */
+async function doResetVotes() {
+  if (!confirm('Alle Stimmen wirklich zurücksetzen?')) return;
+  try {
+    await adminResetVotes(adminPw);
+    showMsg('act-msg', 'Alle Stimmen wurden zurückgesetzt.', 'ok');
+  } catch (err) {
+    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
+  }
+}
+
+async function doResetScores() {
+  if (!confirm('Rangliste wirklich leeren?')) return;
+  try {
+    await adminResetLeaderboard(adminPw);
+    showMsg('act-msg', 'Rangliste wurde geleert.', 'ok');
+  } catch (err) {
+    showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err');
+  }
+}
+
 async function changeAdminPassword() {
-  const oldPw = document.getElementById('pw-old').value;
-  const newPw = document.getElementById('pw-new').value;
+  const oldPw  = document.getElementById('pw-old').value;
+  const newPw  = document.getElementById('pw-new').value;
   const newPw2 = document.getElementById('pw-new2').value;
-
   if (!oldPw || !newPw || !newPw2) {
-    showMsg('pw-msg', 'Bitte alle drei Felder ausfüllen.', 'err');
-    return;
+    showMsg('pw-msg', 'Bitte alle drei Felder ausfüllen.', 'err'); return;
   }
-
   if (newPw.length < 8) {
-    showMsg('pw-msg', 'Das neue Passwort muss mindestens 8 Zeichen haben.', 'err');
-    return;
+    showMsg('pw-msg', 'Das neue Passwort muss mindestens 8 Zeichen haben.', 'err'); return;
   }
-
   if (newPw !== newPw2) {
-    showMsg('pw-msg', 'Die neuen Passwörter stimmen nicht überein.', 'err');
-    return;
+    showMsg('pw-msg', 'Die neuen Passwörter stimmen nicht überein.', 'err'); return;
   }
-
   try {
     const res = await fetch(API_BASE + '/api/admin/password', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Password': adminPw
-      },
-      body: JSON.stringify({
-        old_password: oldPw,
-        new_password: newPw
-      })
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPw },
+      body: JSON.stringify({ old_password: oldPw, new_password: newPw })
     });
-
     const data = await res.json().catch(() => ({}));
-
     if (!res.ok) {
-      showMsg('pw-msg', data.error || 'Passwort konnte nicht geändert werden.', 'err');
-      return;
+      showMsg('pw-msg', data.error || 'Passwort konnte nicht geändert werden.', 'err'); return;
     }
-
     adminPw = '';
-    document.getElementById('pw-old').value = '';
-    document.getElementById('pw-new').value = '';
-    document.getElementById('pw-new2').value = '';
+    ['pw-old','pw-new','pw-new2'].forEach(id => document.getElementById(id).value = '');
     showMsg('pw-msg', 'Passwort wurde geändert. Du wirst jetzt neu angemeldet.', 'ok');
     setTimeout(() => {
       doLogout();
@@ -697,7 +768,6 @@ async function changeAdminPassword() {
     showMsg('pw-msg', 'Passwort konnte nicht geändert werden.', 'err');
   }
 }
-
 </script>
 </body>
 </html>
