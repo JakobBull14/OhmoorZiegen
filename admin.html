@@ -169,29 +169,38 @@
       <div class="admin-section">
         <div class="admin-section-title">💡 Fakten verwalten</div>
 
-        <div style="font-weight:700;margin-bottom:10px">Neuen Fakt hinzufügen</div>
+        <div style="margin-bottom:16px">
+          <button class="btn-primary" onclick="loadFactsAdmin()">Fakten neu laden</button>
+        </div>
 
-        <div class="form-grid">
-          <div class="f-group">
-            <label>Icon</label>
-            <input id="f-icon" placeholder="z.B. 👁️">
+        <div id="facts-list"></div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+          <div id="facts-form-title" style="font-weight:700;margin-bottom:10px">Neuen Fakt hinzufügen</div>
+
+          <div class="form-grid">
+            <div class="f-group">
+              <label>Icon</label>
+              <input id="f-icon" placeholder="z.B. 👁️">
+            </div>
+            <div class="f-group">
+              <label>Titel *</label>
+              <input id="f-title" placeholder="z.B. 360°-Blick">
+            </div>
           </div>
-          <div class="f-group">
-            <label>Titel *</label>
-            <input id="f-title" placeholder="z.B. 360°-Blick">
+
+          <div class="f-group" style="margin-top:12px">
+            <label>Text *</label>
+            <textarea id="f-content" placeholder="Kurzer Faktentext"></textarea>
           </div>
-        </div>
 
-        <div class="f-group" style="margin-top:12px">
-          <label>Text *</label>
-          <textarea id="f-content" placeholder="Kurzer Faktentext"></textarea>
-        </div>
+          <div class="btn-row">
+            <button class="btn-primary" id="f-save-btn" onclick="addFact()">Fakt speichern</button>
+            <button class="btn-danger hidden" id="f-cancel-btn" onclick="cancelEditFact()">Abbrechen</button>
+          </div>
 
-        <div class="btn-row">
-          <button class="btn-primary" onclick="addFact()">Fakt speichern</button>
+          <div id="facts-msg"></div>
         </div>
-
-        <div id="facts-msg"></div>
       </div>
 
       <div class="admin-section">
@@ -239,6 +248,8 @@
 buildNav('admin');
 let adminPw = '';
 let cloudGoats = [];
+let cloudFacts = [];
+let editingFactId = null;
 
 function showMsg(id, text, type='ok') {
   const el = document.getElementById(id);
@@ -269,6 +280,7 @@ async function showAdmin() {
   document.getElementById('admin-screen').classList.remove('hidden');
   await loadCloudGoats();
   await loadQuizAdmin();
+  await loadFactsAdmin();
   buildNav('admin');
 }
 
@@ -522,6 +534,80 @@ async function doResetScores() {
   }
 }
 
+async function loadFactsAdmin() {
+  const box = document.getElementById('facts-list');
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Fakten ...</p>';
+  try {
+    const res = await fetch(API_BASE + '/api/facts');
+    cloudFacts = await res.json();
+    renderFactsList();
+  } catch (err) {
+    box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Fehler beim Laden.</p>';
+  }
+}
+
+function renderFactsList() {
+  const box = document.getElementById('facts-list');
+  if (!cloudFacts.length) {
+    box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Fakten vorhanden.</p>';
+    return;
+  }
+  box.innerHTML = cloudFacts.map(f => `
+    <div style="padding:12px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="font-size:24px;min-width:32px">${escHtml(f.icon || '')}</div>
+        <div style="flex:1">
+          <div style="font-weight:700">${escHtml(f.title)}</div>
+          <div style="font-size:13px;color:var(--clr-text-muted);margin-top:4px">${escHtml(f.content)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-primary" style="font-size:13px;padding:6px 14px" onclick="startEditFact(${f.id})">Bearbeiten</button>
+        <button class="btn-danger" style="font-size:13px;padding:6px 14px" onclick="deleteFact(${f.id})">Löschen</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function startEditFact(id) {
+  const fact = cloudFacts.find(f => f.id === id);
+  if (!fact) return;
+  editingFactId = id;
+  document.getElementById('f-icon').value = fact.icon || '';
+  document.getElementById('f-title').value = fact.title || '';
+  document.getElementById('f-content').value = fact.content || '';
+  document.getElementById('f-save-btn').textContent = 'Änderungen speichern';
+  document.getElementById('f-cancel-btn').classList.remove('hidden');
+  document.getElementById('facts-form-title').textContent = 'Fakt bearbeiten';
+  document.getElementById('f-icon').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditFact() {
+  editingFactId = null;
+  document.getElementById('f-icon').value = '';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-content').value = '';
+  document.getElementById('f-save-btn').textContent = 'Fakt speichern';
+  document.getElementById('f-cancel-btn').classList.add('hidden');
+  document.getElementById('facts-form-title').textContent = 'Neuen Fakt hinzufügen';
+}
+
+async function deleteFact(id) {
+  const fact = cloudFacts.find(f => f.id === id);
+  if (!fact) return;
+  if (!confirm(`Fakt "${fact.title}" wirklich löschen?`)) return;
+  try {
+    await apiRequest(`/api/admin/facts/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': adminPw }
+    });
+    showMsg('facts-msg', 'Fakt wurde gelöscht.', 'ok');
+    await loadFactsAdmin();
+  } catch (err) {
+    showMsg('facts-msg', err.message || 'Löschen fehlgeschlagen.', 'err');
+  }
+}
+
 async function addFact() {
   const icon = document.getElementById('f-icon').value.trim();
   const title = document.getElementById('f-title').value.trim();
@@ -533,17 +619,26 @@ async function addFact() {
   }
 
   try {
-    await apiRequest('/api/admin/facts', {
-      method: 'POST',
-      headers: { 'X-Admin-Password': adminPw },
-      body: JSON.stringify({ icon, title, content })
-    });
-
-    document.getElementById('f-icon').value = '';
-    document.getElementById('f-title').value = '';
-    document.getElementById('f-content').value = '';
-
-    showMsg('facts-msg', 'Fakt wurde gespeichert.', 'ok');
+    if (editingFactId) {
+      await apiRequest(`/api/admin/facts/${editingFactId}`, {
+        method: 'PUT',
+        headers: { 'X-Admin-Password': adminPw },
+        body: JSON.stringify({ icon, title, content })
+      });
+      showMsg('facts-msg', 'Fakt wurde aktualisiert.', 'ok');
+      cancelEditFact();
+    } else {
+      await apiRequest('/api/admin/facts', {
+        method: 'POST',
+        headers: { 'X-Admin-Password': adminPw },
+        body: JSON.stringify({ icon, title, content })
+      });
+      document.getElementById('f-icon').value = '';
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-content').value = '';
+      showMsg('facts-msg', 'Fakt wurde gespeichert.', 'ok');
+    }
+    await loadFactsAdmin();
   } catch (err) {
     showMsg('facts-msg', err.message || 'Speichern fehlgeschlagen.', 'err');
   }
