@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Feedback</title>
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+<style>
+.rating-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.rating-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 8px;
+  background: var(--clr-card);
+  border: 2.5px solid var(--clr-border);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: border-color .18s, transform .15s, box-shadow .18s, background .18s;
+  min-width: 68px;
+}
+.rating-btn:hover:not(.selected) {
+  border-color: var(--clr-text-muted);
+  transform: scale(1.05);
+}
+.rating-btn.selected {
+  border-color: var(--clr-blue);
+  background: rgba(26,115,232,.08);
+  box-shadow: 0 0 0 3px rgba(26,115,232,.18);
+  transform: scale(1.1);
+}
+.rating-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+.rating-btn.selected .rating-label { color: var(--clr-blue); }
+.fb-done-box {
+  text-align: center;
+  padding: 32px 20px;
+}
+.fb-done-goat {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+<main class="app-main">
+
+  <div class="page-title">💬 Feedback</div>
+  <p class="section-sub">Wie gefällt dir die Schulziegen-App? Sag uns deine Meinung!</p>
+
+  <!-- Namens-Eingabe (falls noch kein Name gesetzt) -->
+  <div id="screen-name" class="hidden">
+    <div style="max-width:360px;margin:0 auto">
+      <div class="card" style="padding:24px">
+        <div style="font-size:32px;text-align:center;margin-bottom:12px">👤</div>
+        <div style="font-weight:700;font-size:17px;text-align:center;margin-bottom:8px">Wähle zuerst deinen Namen</div>
+        <p style="font-size:14px;color:var(--clr-text-muted);text-align:center;margin-bottom:20px">
+          Damit wir wissen, von wem das Feedback kommt.
+        </p>
+        <div class="f-group">
+          <input id="name-input" class="form-input" type="text" maxlength="16"
+                 placeholder="z.B. Ziegenfan42"
+                 onkeydown="if(event.key==='Enter')confirmName()">
+        </div>
+        <button class="btn-primary btn-primary-full" onclick="confirmName()">Name bestätigen</button>
+        <div id="name-msg" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feedback-Formular -->
+  <div id="screen-form" class="hidden">
+    <div style="max-width:480px;margin:0 auto">
+
+      <div id="greeting" style="font-size:15px;color:var(--clr-text-muted);text-align:center;margin-bottom:4px"></div>
+
+      <!-- Bewertung -->
+      <div style="text-align:center;margin:24px 0 8px">
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px">Deine Bewertung</div>
+        <div style="font-size:13px;color:var(--clr-text-muted)">Tippe auf eine Ziege</div>
+      </div>
+      <div class="rating-row" id="rating-row"></div>
+
+      <!-- Text -->
+      <div class="f-group" style="margin-top:20px">
+        <label style="font-weight:600;font-size:14px;display:block;margin-bottom:6px">
+          Kommentar <span style="font-weight:400;color:var(--clr-text-muted)">(optional)</span>
+        </label>
+        <textarea id="fb-text" class="form-input" rows="4"
+                  placeholder="Was hat dir gefallen? Was könnte besser sein?"
+                  style="resize:vertical"></textarea>
+      </div>
+
+      <button class="btn-primary btn-primary-full" id="submit-btn"
+              onclick="submitFeedback()" style="margin-top:16px">
+        Feedback abschicken
+      </button>
+      <div id="fb-msg" style="margin-top:10px;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- Bestätigung nach Absenden -->
+  <div id="screen-done" class="hidden">
+    <div class="fb-done-box">
+      <div class="fb-done-goat" id="done-goat"></div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:8px">Danke für dein Feedback!</div>
+      <div style="font-size:15px;color:var(--clr-text-muted);margin-bottom:28px" id="done-text"></div>
+      <button class="btn-primary" onclick="showForm()">Bewertung ändern</button>
+    </div>
+  </div>
+
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('feedback');
+
+/* ── Bewertungs-Emojis ─────────────────────────────────── */
+const GOAT_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩'];
+const GOAT_LABELS = ['', 'Nicht so toll', 'Na ja', 'Ok', 'Gut', 'Super!'];
+
+/* ── State ─────────────────────────────────────────────── */
+let selectedRating = null;
+let myName = '';
+
+/* ── Screens ───────────────────────────────────────────── */
+function show(id) {
+  ['screen-name','screen-form','screen-done'].forEach(s =>
+    document.getElementById(s).classList.toggle('hidden', s !== id)
+  );
+}
+
+function showForm() { show('screen-form'); renderRatingRow(); }
+
+/* ── Rating Row ────────────────────────────────────────── */
+function renderRatingRow() {
+  document.getElementById('rating-row').innerHTML = [1,2,3,4,5].map(r => `
+    <button class="rating-btn${selectedRating === r ? ' selected' : ''}" onclick="selectRating(${r})">
+      <span style="font-size:48px;line-height:1">${GOAT_EMOJIS[r]}</span>
+      <span class="rating-label">${GOAT_LABELS[r]}</span>
+    </button>
+  `).join('');
+}
+
+function selectRating(r) {
+  selectedRating = r;
+  renderRatingRow();
+}
+
+/* ── Name ──────────────────────────────────────────────── */
+function confirmName() {
+  const raw = document.getElementById('name-input').value.trim();
+  const v = validatePlayerName(raw);
+  if (!v.ok) {
+    document.getElementById('name-msg').innerHTML =
+      `<div class="auth-msg err">${escHtml(v.error)}</div>`;
+    return;
+  }
+  setDisplayName(v.name);
+  myName = v.name;
+  init();
+}
+
+/* ── Submit ────────────────────────────────────────────── */
+async function submitFeedback() {
+  if (!selectedRating) {
+    document.getElementById('fb-msg').innerHTML =
+      '<div class="auth-msg err">Bitte wähle zuerst eine Bewertung.</div>';
+    return;
+  }
+  const text = document.getElementById('fb-text').value.trim();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Wird gesendet …';
+
+  try {
+    await apiRequest('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        player_name: myName,
+        device_token: getVoterKey(),
+        rating: selectedRating,
+        text
+      })
+    });
+    showDone(selectedRating, text);
+  } catch (err) {
+    document.getElementById('fb-msg').innerHTML =
+      `<div class="auth-msg err">${escHtml(err.message || 'Fehler beim Senden.')}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Feedback abschicken';
+  }
+}
+
+function showDone(rating, text) {
+  document.getElementById('done-goat').innerHTML = `<span style="font-size:80px">${GOAT_EMOJIS[rating]}</span>`;
+  document.getElementById('done-text').textContent =
+    text ? `"${text}"` : GOAT_LABELS[rating];
+  show('screen-done');
+}
+
+/* ── Init ──────────────────────────────────────────────── */
+async function init() {
+  myName = LS.g('sz_display_name') || '';
+
+  if (!myName || myName.length < 2) {
+    show('screen-name');
+    return;
+  }
+
+  document.getElementById('greeting').textContent = `Hallo, ${myName}!`;
+
+  // Vorhandenes Feedback laden
+  try {
+    const res = await apiRequest('/api/feedback/my', {
+      method: 'POST',
+      body: JSON.stringify({ device_token: getVoterKey() })
+    });
+    if (res.rating) {
+      selectedRating = res.rating;
+      document.getElementById('fb-text').value = res.text || '';
+      // Zeige Formular vor (nicht done-screen), damit man einfach ändern kann
+    }
+  } catch {}
+
+  showForm();
+}
+
+init();
+</script>
+</body>
+</html>
