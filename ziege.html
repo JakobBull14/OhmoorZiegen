@@ -154,6 +154,7 @@ function renderPage() {
     </div>`;
 
   // Foto-Navigation init
+  phReset();
   if (goat.photos && goat.photos.length > 1) {
     updatePhNav();
   }
@@ -174,6 +175,8 @@ function displayAge(val) {
 // ── Foto-Karussel ──
 let phIdx = 0;
 
+function phReset() { phIdx = 0; }
+
 function phNav(dir) {
   phIdx = Math.max(0, Math.min((goat.photos || []).length - 1, phIdx + dir));
   phUpdateDisplay();
@@ -182,8 +185,9 @@ function phNav(dir) {
 function phGo(i) { phIdx = i; phUpdateDisplay(); }
 
 function phUpdateDisplay() {
+  const wrap  = document.getElementById('carousel-wrap');
   const track = document.getElementById('ph-track');
-  if (track) track.style.transform = `translateX(-${phIdx * 100}%)`;
+  if (track && wrap) track.style.transform = `translateX(-${phIdx * wrap.offsetWidth}px)`;
   updatePhNav();
   document.querySelectorAll('.ph-dot').forEach((d, i) => d.classList.toggle('on', i === phIdx));
   const counter = document.getElementById('ph-counter');
