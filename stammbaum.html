@@ -21,6 +21,17 @@
 <script>
 buildNav('stammbaum');
 
+function displayAge(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  const n = parseInt(s);
+  if (!isNaN(n) && n >= 1990 && n <= new Date().getFullYear()) {
+    const age = new Date().getFullYear() - n;
+    return age === 1 ? '1 Jahr' : `${age} Jahre`;
+  }
+  return s;
+}
+
 const goats = getGoats();
 
 function nodeHtml(g) {
@@ -32,7 +43,7 @@ function nodeHtml(g) {
   return `<a class="tree-node" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
     <div class="tree-avatar">${ph}</div>
     <div class="tree-node-name">${g.name}</div>
-    <div class="tree-node-age">${g.age}</div>
+    <div class="tree-node-age">${displayAge(g.age)}</div>
   </a>`;
 }
 

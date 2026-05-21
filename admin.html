@@ -176,7 +176,7 @@
               <div class="f-group"><label>Name *</label><input id="e-name"></div>
               <div class="f-group"><label>Spitzname</label><input id="e-nick"></div>
               <div class="f-group"><label>Rasse</label><input id="e-breed"></div>
-              <div class="f-group"><label>Alter</label><input id="e-age"></div>
+              <div class="f-group"><label>Geburtsjahr</label><input id="e-age" placeholder="z.B. 2021" maxlength="4"></div>
               <div class="f-group"><label>Charakter</label><input id="e-char"></div>
               <div class="f-group"><label>Lieblingsessen</label><input id="e-food"></div>
             </div>
@@ -273,7 +273,7 @@
               <div class="f-group"><label>Name *</label><input id="a-name" placeholder="z.B. Frieda"></div>
               <div class="f-group"><label>Spitzname</label><input id="a-nick"></div>
               <div class="f-group"><label>Rasse</label><input id="a-breed" placeholder="z.B. Zwergziege"></div>
-              <div class="f-group"><label>Alter</label><input id="a-age" placeholder="z.B. 3 Jahre"></div>
+              <div class="f-group"><label>Geburtsjahr</label><input id="a-age" placeholder="z.B. 2021" maxlength="4"></div>
               <div class="f-group"><label>Charakter</label><input id="a-char"></div>
               <div class="f-group"><label>Lieblingsessen</label><input id="a-food"></div>
             </div>
@@ -466,6 +466,22 @@ let fbFilter = 'all';
 const GOAT_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩'];
 const GOAT_LABELS = ['', 'Nicht so toll', 'Na ja', 'Ok', 'Gut', 'Super!'];
 
+/* Altes Alter-Format ("3 Jahre", "5") → Geburtsjahr */
+function ageToYear(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  const n = parseInt(s);
+  // Schon ein 4-stelliges Jahr?
+  if (!isNaN(n) && n >= 1990 && n <= new Date().getFullYear()) return s.replace(/\D.*/,'');
+  // Zahl aus Text extrahieren ("3 Jahre", "ca. 5 Jahre")
+  const m = s.match(/\d+/);
+  if (m) {
+    const years = parseInt(m[0]);
+    if (years >= 0 && years <= 30) return String(new Date().getFullYear() - years);
+  }
+  return '';
+}
+
 function fmtDate(ts) {
   if (!ts) return '';
   try {
@@ -550,7 +566,7 @@ function fillEditForm() {
   document.getElementById('e-name').value  = goat.name || '';
   document.getElementById('e-nick').value  = goat.nick || '';
   document.getElementById('e-breed').value = goat.breed || '';
-  document.getElementById('e-age').value   = goat.age || '';
+  document.getElementById('e-age').value   = ageToYear(goat.age);
   document.getElementById('e-char').value  = goat.character || '';
   document.getElementById('e-food').value  = goat.food || '';
   document.getElementById('e-story').value = goat.story || '';
