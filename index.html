@@ -48,66 +48,56 @@ buildNav('gallery');
 let goats = [];
 let filtered = [];
 
+/* ── Vote-Ergebnisse parsen (helper) ── */
+function applyVoteResults(raw) {
+  const voteMap = {};
+  if (Array.isArray(raw)) {
+    raw.forEach(item => {
+      const id = Number(item.goat_id ?? item.id ?? item.goatId);
+      const v  = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+      if (id) voteMap[id] = v;
+    });
+  } else if (raw && typeof raw === 'object') {
+    const list = Array.isArray(raw.results) ? raw.results : null;
+    if (list) {
+      list.forEach(item => {
+        const id = Number(item.goat_id ?? item.id ?? item.goatId);
+        const v  = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
+        if (id) voteMap[id] = v;
+      });
+    } else {
+      Object.entries(raw).forEach(([key, value]) => {
+        const id = Number(key);
+        const v  = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
+        if (id) voteMap[id] = v;
+      });
+    }
+  }
+  goats    = goats.map(g => ({ ...g, votes: voteMap[g.id] || 0 }));
+  filtered = filtered.map(f => goats.find(g => g.id === f.id) || f);
+}
+
 async function loadPlayerCount() {
   try {
     const lb = await fetchLeaderboard();
     const names = new Set();
     (lb || []).forEach(entry => {
-      if (entry && entry.player_name) {
+      if (entry && entry.player_name)
         names.add(String(entry.player_name).trim().toLowerCase());
-      }
     });
-
     const el = document.getElementById('player-count');
-    if (!el) return;
-
-    const count = names.size || 0;
-    el.innerHTML = `👥 <strong>${count}</strong> Spieler machen schon mit`;
-  } catch (e) {
-    console.warn('Spielerzahl konnte nicht geladen werden.', e);
-  }
+    if (el) el.innerHTML = `👥 <strong>${names.size || 0}</strong> Spieler machen schon mit`;
+  } catch (e) { console.warn('Spielerzahl konnte nicht geladen werden.', e); }
 }
 
 async function initPage() {
-  try {
-    goats = await getGoatsFromApi();
-  } catch (e) {
-    console.error('API-Laden fehlgeschlagen, nutze lokalen Fallback.', e);
-    goats = getGoats();
-  }
+  try { goats = await getGoatsFromApi(); }
+  catch (e) { console.error('API fehlgeschlagen, nutze Fallback.', e); goats = getGoats(); }
 
-  try {
-    const rawVoteResults = await fetchVoteResults();
-    const voteMap = {};
+  try { await fetchCurrentVote(); } catch {}
 
-    if (Array.isArray(rawVoteResults)) {
-      rawVoteResults.forEach(item => {
-        const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
-        const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
-        if (goatId) voteMap[goatId] = votes;
-      });
-    } else if (rawVoteResults && typeof rawVoteResults === 'object') {
-      const list = Array.isArray(rawVoteResults.results) ? rawVoteResults.results : null;
-
-      if (list) {
-        list.forEach(item => {
-          const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
-          const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
-          if (goatId) voteMap[goatId] = votes;
-        });
-      } else {
-        Object.entries(rawVoteResults).forEach(([key, value]) => {
-          const goatId = Number(key);
-          const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
-          if (goatId) voteMap[goatId] = votes;
-        });
-      }
-    }
-
-    goats = goats.map(g => ({ ...g, votes: voteMap[g.id] || 0 }));
-  } catch (e) {
-    console.warn('Vote-Ergebnisse konnten nicht geladen werden.', e);
-  }
+  try { applyVoteResults(await fetchVoteResults()); }
+  catch (e) { console.warn('Vote-Ergebnisse konnten nicht geladen werden.', e); }
 
   filtered = [...goats];
   renderGallery();
@@ -144,33 +134,37 @@ function renderGallery() {
   const goatsWithVotes = goats
     .filter(g => Number(g.votes || 0) > 0)
     .sort((a, b) => Number(b.votes || 0) - Number(a.votes || 0));
-
   const showRanking = goatsWithVotes.length >= 3;
   const topIds = showRanking ? goatsWithVotes.slice(0, 3).map(g => g.id) : [];
 
-  function getRankIcon(goatId) {
-    const pos = topIds.indexOf(goatId);
-    if (pos === 0) return '🥇 ';
-    if (pos === 1) return '🥈 ';
-    if (pos === 2) return '🥉 ';
-    return '';
+  function getRankIcon(id) {
+    const pos = topIds.indexOf(id);
+    return pos === 0 ? '🥇 ' : pos === 1 ? '🥈 ' : pos === 2 ? '🥉 ' : '';
   }
+
+  const votedId = getVotedId();
 
   grid.innerHTML = filtered.map(g => {
     const ph = (g.photos && g.photos.length)
       ? `<img src="${g.photos[0]}" alt="${g.name}" loading="lazy">`
       : g.foto
-        ? `<img src="${g.foto}" alt="${g.name}" loading="lazy" onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'"><span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
+        ? `<img src="${g.foto}" alt="${g.name}" loading="lazy"
+               onerror="this.parentNode.querySelector('.fb-emoji').style.display='block';this.style.display='none'">
+           <span class="fb-emoji" style="display:none;font-size:3.5rem">${g.e}</span>`
         : `<span style="font-size:3.5rem">${g.e}</span>`;
 
-    const cnt = g.photos && g.photos.length > 1
+    const cnt      = g.photos && g.photos.length > 1
       ? `<div class="gc-photo-count">📷 ${g.photos.length}</div>` : '';
-
     const rankIcon = showRanking ? getRankIcon(g.id) : '';
-    const vt = `<div class="gc-badge">${rankIcon}❤️ ${Number(g.votes || 0)}</div>`;
+    const badge    = `<div class="gc-badge">${rankIcon}❤️ ${Number(g.votes || 0)}</div>`;
+    const isVoted  = Number(votedId) === g.id;
+    const voteBtn  = `<button class="gc-vote-btn${isVoted ? ' voted' : ''}"
+        onclick="doVoteCard(${g.id},event)"
+        title="${isVoted ? 'Deine Lieblingsziege' : 'Als Lieblingsziege wählen'}"
+        aria-label="Abstimmen">${isVoted ? '♥' : '♡'}</button>`;
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
-      <div class="goat-card-image">${ph}${vt}</div>
+      <div class="goat-card-image">${ph}${badge}${cnt}${voteBtn}</div>
       <div class="goat-card-body">
         <div class="goat-card-name">${g.name}</div>
         <div class="goat-card-nick">${g.nick}</div>
@@ -181,6 +175,20 @@ function renderGallery() {
       </div>
     </a>`;
   }).join('');
+}
+
+/* ── Abstimmen direkt aus der Galerie ── */
+async function doVoteCard(id, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    await submitVote(id);
+    await fetchCurrentVote();
+    applyVoteResults(await fetchVoteResults());
+    renderGallery();
+  } catch (err) {
+    alert(err.message || 'Abstimmung fehlgeschlagen.');
+  }
 }
 
 initPage();
