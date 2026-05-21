@@ -94,8 +94,7 @@ function ensureConfirmedPlayerName() {
 let quizQuestions = [];
 async function loadQuizFromApi() {
   try {
-    const res = await fetch('https://ziegen-api.torstenbull.workers.dev/api/quiz');
-    const data = await res.json();
+    const data = await apiRequest('/api/quiz');
 
     // API → Format deiner App
     quizQuestions = data.map(q => ({
@@ -150,11 +149,11 @@ function renderQuiz() {
       <div class="quiz-progress-bar" style="width:${idx / questions.length * 100}%"></div>
     </div>
     <div class="quiz-meta">Frage ${idx + 1} von ${questions.length}</div>
-    <span class="quiz-emoji">${q.e}</span>
-    <div class="quiz-question">${q.q}</div>
+    <span class="quiz-emoji">${escHtml(q.e)}</span>
+    <div class="quiz-question">${escHtml(q.q)}</div>
     <div class="quiz-options">
       ${q.a.map((a, i) => `
-        <button class="quiz-option" id="qo${i}" onclick="answerQ(${i})">${a}</button>
+        <button class="quiz-option" id="qo${i}" onclick="answerQ(${i})">${escHtml(a)}</button>
       `).join('')}
     </div>
     <div id="q-fb"></div>`;
@@ -175,7 +174,7 @@ function answerQ(ch) {
 
   document.getElementById('q-fb').innerHTML = `
     <div class="quiz-feedback ${ok ? 'correct' : 'wrong'}">
-      ${ok ? '✓ Richtig!' : `✗ Falsch. Richtig war: <strong>${q.a[q.c]}</strong>`}
+      ${ok ? '✓ Richtig!' : `✗ Falsch. Richtig war: <strong>${escHtml(q.a[q.c])}</strong>`}
     </div>
     <button class="btn-primary" style="margin-top:14px" onclick="nextQ()">
       ${quizState.idx + 1 < quizState.questions.length ? 'Weiter →' : 'Ergebnis anzeigen'}

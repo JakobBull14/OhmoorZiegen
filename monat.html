@@ -30,16 +30,16 @@ function buildWinnerCard(sorted, total) {
   }
 
   const wph = w.foto
-    ? `<img src="${w.foto}" alt="${w.name}" onerror="this.style.display='none'">`
-    : w.e;
+    ? `<img src="${escHtml(w.foto)}" alt="${escHtml(w.name)}" onerror="this.style.display='none'">`
+    : escHtml(w.e);
 
   return `
     <div class="gotm-card">
       <div class="gotm-photo">${wph}</div>
       <div>
         <div class="gotm-label">Ziege des Monats</div>
-        <div class="gotm-name">${w.name}</div>
-        <div class="gotm-sub">${w.nick} · ${w.character}</div>
+        <div class="gotm-name">${escHtml(w.name)}</div>
+        <div class="gotm-sub">${escHtml(w.nick)} · ${escHtml(w.character)}</div>
         <div class="gotm-votes">♥ ${w.votes} Stimmen${total > 0 ? ` · ${Math.round(w.votes / total * 100)}%` : ''}</div>
       </div>
     </div>`;
@@ -116,7 +116,7 @@ function render() {
       ${sorted.map(g => {
         const ph = g.foto
           ? `<img src="${g.foto}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">`
-          : `<span style="font-size:18px">${g.e}</span>`;
+          : `<span style="font-size:18px">${escHtml(g.e)}</span>`;
         const pct = total > 0 ? Math.round(g.votes / total * 100) : 0;
         const rankStyle = sorted.length >= 3
           ? (g.id === sorted[0].id
@@ -140,7 +140,7 @@ function render() {
 
         return `<div class="vote-row" style="${rankStyle}">
           ${ph}
-          <a href="/OhmoorZiegen/ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${g.name}</a>
+          <a href="/OhmoorZiegen/ziege.html?id=${g.id}" class="vote-row-name" style="color:var(--clr-text);text-decoration:none">${escHtml(g.name)}</a>
           <div class="vote-row-bar"><div class="vote-row-fill" style="width:${pct}%;${fillStyle}"></div></div>
           <span class="vote-row-count">♥ ${g.votes}</span>
           ${Number(votedId) === Number(g.id)
