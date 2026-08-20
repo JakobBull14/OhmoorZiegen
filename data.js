@@ -100,9 +100,10 @@ function mapApiGoat(row) {
 // ══════════════════════════════════════════
 function memorialLabel(goat) {
   if (!goat || !goat.deceased_date) return '';
-  const deathYear = String(goat.deceased_date).slice(0, 4);
+  const [y, m, d] = String(goat.deceased_date).split('-');
+  const deathLabel = (y && m && d) ? `${d}.${m}.${y}` : String(goat.deceased_date);
   const birthYear = String(goat.age || '').match(/^\d{4}$/) ? goat.age : null;
-  const range = birthYear ? `${birthYear}–${deathYear}` : deathYear;
+  const range = birthYear ? `${birthYear} – ${deathLabel}` : `verstorben am ${deathLabel}`;
   return `🕊️ In liebevoller Erinnerung · ${range}`;
 }
 
