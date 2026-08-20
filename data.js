@@ -90,8 +90,20 @@ function mapApiGoat(row) {
     foto: row.main_image_url || ziegenbild(row.name || ''),
     photos: Array.isArray(row.photos) ? row.photos : [],
     votes: typeof row.votes === 'number' ? row.votes : 0,
+    deceased_date: row.deceased_date || null,
     e: '🐐'
   };
+}
+
+// ══════════════════════════════════════════
+// GEDENK-ANZEIGE (verstorbene Ziegen)
+// ══════════════════════════════════════════
+function memorialLabel(goat) {
+  if (!goat || !goat.deceased_date) return '';
+  const deathYear = String(goat.deceased_date).slice(0, 4);
+  const birthYear = String(goat.age || '').match(/^\d{4}$/) ? goat.age : null;
+  const range = birthYear ? `${birthYear}–${deathYear}` : deathYear;
+  return `🕊️ In liebevoller Erinnerung · ${range}`;
 }
 
 async function getGoatsFromApi() {

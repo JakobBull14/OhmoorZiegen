@@ -162,15 +162,17 @@ function renderGallery() {
         onclick="doVoteCard(${g.id},event)"
         title="${isVoted ? 'Deine Lieblingsziege' : 'Als Lieblingsziege wählen'}"
         aria-label="Abstimmen">${isVoted ? '♥' : '♡'}</button>`;
+    const isMemorial = !!g.deceased_date;
+    const ribbon     = isMemorial ? `<div class="goat-memorial-ribbon">${escHtml(memorialLabel(g))}</div>` : '';
 
     return `<a class="goat-card" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
-      <div class="goat-card-image">${ph}${badge}${cnt}${voteBtn}</div>
+      <div class="goat-card-image${isMemorial ? ' goat-memorial' : ''}">${ph}${badge}${cnt}${voteBtn}${ribbon}</div>
       <div class="goat-card-body">
-        <div class="goat-card-name">${g.name}</div>
-        <div class="goat-card-nick">${g.nick}</div>
+        <div class="goat-card-name">${escHtml(g.name)}</div>
+        <div class="goat-card-nick">${escHtml(g.nick || '')}</div>
         <div class="goat-card-chips">
-          <span class="chip">🎂 ${displayAge(g.age)}</span>
-          ${g.mother ? `<span class="chip chip-blue">↑ ${g.mother}</span>` : ''}
+          <span class="chip">🎂 ${escHtml(displayAge(g.age))}</span>
+          ${g.mother ? `<span class="chip chip-blue">↑ ${escHtml(g.mother)}</span>` : ''}
         </div>
       </div>
     </a>`;

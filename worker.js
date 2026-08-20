@@ -51,7 +51,15 @@ function formatDateLabel(value) {
   }
 }
 
-function getAdminHash(raw) {
+// SHA-256 hash (secure, used for all new passwords)
+async function getAdminHash(raw) {
+  const data = new TextEncoder().encode(raw);
+  const buf  = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Legacy Java-style hash – kept only for backward-compat login with old stored hashes
+function getLegacyHash(raw) {
   let h = 0;
   for (let i = 0; i < raw.length; i++) {
     h = (Math.imul(31, h) + raw.charCodeAt(i)) | 0;
@@ -70,7 +78,8 @@ async function isAdmin(request, env) {
   `).first();
 
   const storedHash = row?.value || "";
-  return getAdminHash(pw) === storedHash;
+  // Accept SHA-256 (new) or legacy hash (old DB entries — auto-upgrades on next password change)
+  return (await getAdminHash(pw)) === storedHash || getLegacyHash(pw) === storedHash;
 }
 
 async function loadGoatPhotos(env) {
@@ -235,10 +244,19 @@ if (path.match(/^\/api\/admin\/quiz\/leaderboard\/(\d+)$/) && request.method ===
 
   const id = Number(path.split('/').pop());
 
+  const row = await env.DB.prepare(`
+    SELECT player_name
+    FROM quiz_leaderboard
+    WHERE id = ?
+    LIMIT 1
+  `).bind(id).first();
+
+  if (!row) return json({ ok: true });
+
   await env.DB.prepare(`
     DELETE FROM quiz_leaderboard
-    WHERE id = ?
-  `).bind(id).run();
+    WHERE player_name = ?
+  `).bind(row.player_name).run();
 
   return json({ ok: true });
 }
@@ -276,6 +294,123 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
     }
 
     try {
+      // ================= FACTS =================
+      if (path === '/api/facts' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(`
+          SELECT id, icon, title, content
+          FROM facts
+          WHERE is_active = 1
+          ORDER BY id ASC
+      `).all();
+
+  return json(results || []);
+}
+
+// ================= ADMIN FACT ADD =================
+if (path === '/api/admin/facts' && request.method === 'POST') {
+  if (!await isAdmin(request, env)) {
+    return json({ error: "Forbidden" }, 403);
+  }
+
+  const body = await request.json();
+
+  await env.DB.prepare(`
+    INSERT INTO facts (icon, title, content, is_active)
+    VALUES (?, ?, ?, 1)
+  `).bind(
+    String(body.icon || '').trim(),
+    String(body.title || '').trim(),
+    String(body.content || '').trim()
+  ).run();
+
+  return json({ ok: true });
+}
+
+// ================= ADMIN FACT UPDATE & DELETE =================
+const factAdminMatch = path.match(/^\/api\/admin\/facts\/(\d+)$/);
+
+if (factAdminMatch && request.method === 'PUT') {
+  if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+  const id = Number(factAdminMatch[1]);
+  const body = await request.json();
+  await env.DB.prepare(`
+    UPDATE facts SET icon = ?, title = ?, content = ? WHERE id = ?
+  `).bind(
+    String(body.icon || '').trim(),
+    String(body.title || '').trim(),
+    String(body.content || '').trim(),
+    id
+  ).run();
+  return json({ ok: true });
+}
+
+if (factAdminMatch && request.method === 'DELETE') {
+  if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+  const id = Number(factAdminMatch[1]);
+  await env.DB.prepare("DELETE FROM facts WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+// ================= FEEDBACK SUBMIT / UPDATE =================
+if (path === '/api/feedback' && request.method === 'POST') {
+  const body = await request.json();
+  const playerName = String(body.player_name || '').trim();
+  const deviceToken = String(body.device_token || '').trim();
+  const rating = Number(body.rating);
+  const feedbackText = String(body.text || '').trim();
+
+  if (!playerName || playerName.length < 2) return json({ error: 'Name fehlt.' }, 400);
+  if (!deviceToken) return json({ error: 'Gerät nicht identifizierbar.' }, 400);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return json({ error: 'Ungültige Bewertung.' }, 400);
+
+  const existing = await env.DB.prepare(
+    'SELECT id FROM feedback WHERE device_token = ? LIMIT 1'
+  ).bind(deviceToken).first();
+
+  if (existing) {
+    await env.DB.prepare(`
+      UPDATE feedback SET player_name = ?, rating = ?, text = ?, created_at = CURRENT_TIMESTAMP
+      WHERE device_token = ?
+    `).bind(playerName, rating, feedbackText || null, deviceToken).run();
+  } else {
+    await env.DB.prepare(`
+      INSERT INTO feedback (player_name, device_token, rating, text) VALUES (?, ?, ?, ?)
+    `).bind(playerName, deviceToken, rating, feedbackText || null).run();
+  }
+  return json({ ok: true });
+}
+
+// ================= FEEDBACK GET OWN =================
+if (path === '/api/feedback/my' && request.method === 'POST') {
+  const body = await request.json();
+  const deviceToken = String(body.device_token || '').trim();
+  if (!deviceToken) return json({ rating: null, text: null });
+  const row = await env.DB.prepare(
+    'SELECT rating, text FROM feedback WHERE device_token = ? LIMIT 1'
+  ).bind(deviceToken).first();
+  return json({ rating: row?.rating ?? null, text: row?.text ?? null });
+}
+
+// ================= ADMIN FEEDBACK LIST =================
+if (path === '/api/admin/feedback' && request.method === 'GET') {
+  if (!await isAdmin(request, env)) return json({ error: 'Forbidden' }, 403);
+  const { results } = await env.DB.prepare(`
+    SELECT id, player_name, rating, text, created_at
+    FROM feedback
+    ORDER BY created_at DESC
+  `).all();
+  return json(results || []);
+}
+
+// ================= ADMIN FEEDBACK DELETE =================
+const feedbackAdminMatch = path.match(/^\/api\/admin\/feedback\/(\d+)$/);
+if (feedbackAdminMatch && request.method === 'DELETE') {
+  if (!await isAdmin(request, env)) return json({ error: 'Forbidden' }, 403);
+  const id = Number(feedbackAdminMatch[1]);
+  await env.DB.prepare('DELETE FROM feedback WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
       if (path === "/api/goats" && request.method === "GET") {
         const { results } = await env.DB.prepare("SELECT g.*, p.name AS mother_name FROM goats g LEFT JOIN goats p ON p.id = g.mother_id ORDER BY g.id").all();
         const photosByGoat = await loadGoatPhotos(env);
@@ -435,8 +570,8 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
         if (!name) return json({ error: "Name fehlt." }, 400);
 
         const result = await env.DB.prepare(`
-          INSERT INTO goats (name, nickname, breed, age, character, favorite_food, story, special_skill, main_image_url)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO goats (name, nickname, breed, age, character, favorite_food, story, special_skill, main_image_url, deceased_date)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           name,
           String(body.nickname || "").trim(),
@@ -446,7 +581,8 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
           String(body.favorite_food || "").trim(),
           String(body.story || "").trim(),
           String(body.special_skill || "").trim(),
-          String(body.main_image_url || "").trim()
+          String(body.main_image_url || "").trim(),
+          body.deceased_date ? String(body.deceased_date).trim() : null
         ).run();
 
         return json({ ok: true, id: result.meta?.last_row_id || null });
@@ -457,45 +593,61 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
 
         const formData = await request.formData();
         const file = formData.get("file");
-        const goatId = String(formData.get("goat_id") || "").trim();
+        const goatIdRaw = String(formData.get("goat_id") || "").trim();
         const caption = String(formData.get("caption") || "").trim();
 
         if (!file || typeof file === "string") {
           return json({ error: "Keine Datei empfangen." }, 400);
         }
 
-        if (!goatId) {
-          return json({ error: "Ziegen-ID fehlt." }, 400);
+        // Validate goatId is a safe positive integer (prevents path traversal in R2 key)
+        const goatIdInt = parseInt(goatIdRaw, 10);
+        if (!Number.isInteger(goatIdInt) || goatIdInt <= 0) {
+          return json({ error: "Ungültige Ziegen-ID." }, 400);
         }
 
         const ext = file.name && file.name.includes(".")
           ? file.name.split(".").pop().toLowerCase()
           : "jpg";
 
-        const allowed = ["jpg", "jpeg", "png", "webp"];
-        if (!allowed.includes(ext)) {
+        const ALLOWED_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+        if (!ALLOWED_TYPES[ext]) {
           return json({ error: "Nur jpg, jpeg, png oder webp erlaubt." }, 400);
         }
 
-        const key = `goats/${goatId}/${Date.now()}.${ext}`;
+        const skipGallery = formData.get("skip_gallery") === "true";
+
+        // Server-side gallery slot limit (max 5 per goat)
+        if (!skipGallery) {
+          const { results: existingImgs } = await env.DB.prepare(
+            "SELECT id FROM goat_images WHERE goat_id = ?"
+          ).bind(goatIdInt).all();
+          if ((existingImgs || []).length >= 5) {
+            return json({ error: "Maximal 5 Galeriebilder pro Ziege erlaubt." }, 400);
+          }
+        }
+
+        // Use server-determined content-type, never trust client-supplied value
+        const key = `goats/${goatIdInt}/${Date.now()}.${ext}`;
         await env.ZIEGEN_BILDER.put(key, file.stream(), {
-          httpMetadata: { contentType: file.type || "application/octet-stream" }
+          httpMetadata: { contentType: ALLOWED_TYPES[ext] }
         });
 
         const publicUrl = `https://pub-78b8df31088d4faba7413d07037dbd2e.r2.dev/${key}`;
 
-        // 🔥 NEU: Bild auch in DB speichern
-        await env.DB.prepare(`
-          INSERT INTO goat_images (goat_id, image_url, caption)
-          VALUES (?, ?, ?)
-        `).bind(Number(goatId), publicUrl, caption).run();
+        if (!skipGallery) {
+          await env.DB.prepare(`
+            INSERT INTO goat_images (goat_id, image_url, caption)
+            VALUES (?, ?, ?)
+          `).bind(goatIdInt, publicUrl, caption).run();
+        }
 
         return json({
           ok: true,
           image_url: publicUrl,
           caption
         });
-        }
+      }
 
       const goatAdminMatch = path.match(/^\/api\/admin\/goats\/(\d+)$/);
 
@@ -512,7 +664,7 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
 
         await env.DB.prepare(`
           UPDATE goats
-          SET name = ?, nickname = ?, breed = ?, age = ?, character = ?, favorite_food = ?, story = ?, special_skill = ?, mother_id = ?, main_image_url = ?
+          SET name = ?, nickname = ?, breed = ?, age = ?, character = ?, favorite_food = ?, story = ?, special_skill = ?, mother_id = ?, main_image_url = ?, deceased_date = ?
           WHERE id = ?
         `).bind(
           name,
@@ -525,6 +677,7 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
           String(body.special_skill || "").trim(),
           body.mother_id ?? null,
           String(body.main_image_url || "").trim(),
+          body.deceased_date ? String(body.deceased_date).trim() : null,
           id
         ).run();
 
@@ -558,6 +711,14 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
         const imageUrl = String(body.image_url || "").trim();
         const caption = String(body.caption || "").trim();
         if (!goatId || !imageUrl) return json({ error: "Ziege und Bild-URL werden benötigt." }, 400);
+
+        // Enforce max 5 gallery images per goat
+        const { results: existingImgs } = await env.DB.prepare(
+          "SELECT id FROM goat_images WHERE goat_id = ?"
+        ).bind(goatId).all();
+        if ((existingImgs || []).length >= 5) {
+          return json({ error: "Maximal 5 Galeriebilder pro Ziege erlaubt." }, 400);
+        }
 
         const result = await env.DB.prepare(`
           INSERT INTO goat_images (goat_id, image_url, caption)
@@ -605,24 +766,20 @@ if (path.match(/^\/api\/admin\/quiz\/\d+$/) && request.method === 'DELETE') {
         if (!(await isAdmin(request, env))) return json({ error: "Forbidden" }, 403);
 
         const body = await request.json();
-        const oldPassword = String(body.old_password || "");
         const newPassword = String(body.new_password || "").trim();
 
-        if (getAdminHash(oldPassword) !== getAdminHash(request.headers.get("X-Admin-Password") || "")) {
-        return json({ error: "Altes Passwort ist nicht korrekt." }, 400);
-        }
-
         if (newPassword.length < 8) {
-        return json({ error: "Das neue Passwort muss mindestens 8 Zeichen haben." }, 400);
+          return json({ error: "Das neue Passwort muss mindestens 8 Zeichen haben." }, 400);
         }
 
-        const newHash = getAdminHash(newPassword);
+        // Always store as SHA-256 going forward (upgrades legacy hashes automatically)
+        const newHash = await getAdminHash(newPassword);
 
         await env.DB.prepare(`
           INSERT INTO app_settings (key, value)
           VALUES ('admin_password_hash', ?)
           ON CONFLICT(key) DO UPDATE SET value = excluded.value
-  `     ).bind(newHash).run();
+        `).bind(newHash).run();
 
         return json({ ok: true });
       }
