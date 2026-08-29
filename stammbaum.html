@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Schulziegen – Stammbaum</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
 <link rel="stylesheet" href="/OhmoorZiegen/style.css">
 </head>
 <body>
@@ -32,53 +38,67 @@ function displayAge(val) {
   return s;
 }
 
-const goats = getGoats();
-
 function nodeHtml(g) {
   const ph = (g.photos && g.photos.length)
-    ? `<img src="${g.photos[0]}" alt="${g.name}">`
+    ? `<img src="${escHtml(g.photos[0])}" alt="${escHtml(g.name)}">`
     : g.foto
-      ? `<img src="${g.foto}" alt="${g.name}" onerror="this.style.display='none'">`
-      : g.e;
+      ? `<img src="${escHtml(g.foto)}" alt="${escHtml(g.name)}" onerror="this.style.display='none'">`
+      : escHtml(g.e || '');
   return `<a class="tree-node" href="/OhmoorZiegen/ziege.html?id=${g.id}" style="text-decoration:none">
     <div class="tree-avatar">${ph}</div>
-    <div class="tree-node-name">${g.name}</div>
-    <div class="tree-node-age">${displayAge(g.age)}</div>
+    <div class="tree-node-name">${escHtml(g.name)}</div>
+    <div class="tree-node-age">${escHtml(displayAge(g.age))}</div>
   </a>`;
 }
 
-const g0 = goats.filter(g => !g.mother);
-const g1 = goats.filter(g => g.mother && g0.find(gg => gg.name === g.mother));
-const g2 = goats.filter(g => g.mother && g1.find(gg => gg.name === g.mother));
-const rels = goats.filter(g => g.mother);
+function renderTree(goats) {
+  const g0 = goats.filter(g => !g.mother);
+  const g1 = goats.filter(g => g.mother && g0.find(gg => gg.name === g.mother));
+  const g2 = goats.filter(g => g.mother && g1.find(gg => gg.name === g.mother));
+  const rels = goats.filter(g => g.mother);
 
-document.getElementById('tree-body').innerHTML = `
-  <div class="tree-generation-label">Gründerziegen (keine Mutter bekannt)</div>
-  <div class="tree-level">${g0.map(nodeHtml).join('')}</div>
+  document.getElementById('tree-body').innerHTML = `
+    <div class="tree-generation-label">Gründerziegen (keine Mutter bekannt)</div>
+    <div class="tree-level">${g0.map(nodeHtml).join('')}</div>
 
-  ${g1.length ? `
-    <div class="tree-arrow">↓</div>
-    <div class="tree-generation-label">1. Generation</div>
-    <div class="tree-level">${g1.map(nodeHtml).join('')}</div>
-  ` : ''}
+    ${g1.length ? `
+      <div class="tree-arrow">↓</div>
+      <div class="tree-generation-label">1. Generation</div>
+      <div class="tree-level">${g1.map(nodeHtml).join('')}</div>
+    ` : ''}
 
-  ${g2.length ? `
-    <div class="tree-arrow">↓</div>
-    <div class="tree-generation-label">2. Generation</div>
-    <div class="tree-level">${g2.map(nodeHtml).join('')}</div>
-  ` : ''}
+    ${g2.length ? `
+      <div class="tree-arrow">↓</div>
+      <div class="tree-generation-label">2. Generation</div>
+      <div class="tree-level">${g2.map(nodeHtml).join('')}</div>
+    ` : ''}
 
-  <div class="tree-relations" style="margin-top:28px">
-    <div class="tree-rel-header">Alle Mutter-Kind-Beziehungen</div>
-    ${rels.length ? rels.map(g => `
-      <div class="tree-rel-row">
-        <strong>${g.mother}</strong>
-        <span style="color:var(--clr-text-faint)">→</span>
-        <a href="/OhmoorZiegen/ziege.html?id=${g.id}" style="color:var(--clr-blue);text-decoration:none;font-weight:500">${g.name}</a>
-        <span style="color:var(--clr-text-faint);font-size:12px">${g.nick}</span>
-      </div>`).join('')
-    : '<div class="tree-rel-row" style="color:var(--clr-text-muted)">Keine Beziehungen gefunden.</div>'}
-  </div>`;
+    <div class="tree-relations" style="margin-top:28px">
+      <div class="tree-rel-header">Alle Mutter-Kind-Beziehungen</div>
+      ${rels.length ? rels.map(g => `
+        <div class="tree-rel-row">
+          <strong>${escHtml(g.mother)}</strong>
+          <span style="color:var(--clr-text-faint)">→</span>
+          <a href="/OhmoorZiegen/ziege.html?id=${g.id}" style="color:var(--clr-blue);text-decoration:none;font-weight:500">${escHtml(g.name)}</a>
+          <span style="color:var(--clr-text-faint);font-size:12px">${escHtml(g.nick || '')}</span>
+        </div>`).join('')
+      : '<div class="tree-rel-row" style="color:var(--clr-text-muted)">Keine Beziehungen gefunden.</div>'}
+    </div>`;
+}
+
+async function initPage() {
+  document.getElementById('tree-body').innerHTML =
+    '<p style="color:var(--clr-text-muted);font-size:14px">Lade Stammbaum …</p>';
+  try {
+    const goats = await getGoatsFromApi();
+    renderTree(goats);
+  } catch (e) {
+    console.error('API fehlgeschlagen, nutze lokalen Fallback.', e);
+    renderTree(getGoats());
+  }
+}
+
+initPage();
 </script>
 </body>
 </html>
