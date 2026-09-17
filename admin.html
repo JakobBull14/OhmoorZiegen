@@ -466,7 +466,7 @@
               Achtung: Diese Aktionen können nicht rückgängig gemacht werden.
             </p>
             <div style="display:grid;gap:12px;max-width:400px">
-              <button class="btn-danger" onclick="doResetVotes()">Abstimmungs-Stimmen zurücksetzen</button>
+              <button class="btn-danger" onclick="doResetVotes()">Laufenden Monat der Abstimmung zurücksetzen</button>
               <button class="btn-danger" onclick="doResetScores()">Rangliste leeren</button>
             </div>
             <div id="act-msg" style="margin-top:12px"></div>
@@ -1344,8 +1344,8 @@ async function deleteFeedback(id) {
 
 /* ── System ──────────────────────────────────────────── */
 async function doResetVotes() {
-  if (!confirm('Alle Stimmen wirklich zurücksetzen?')) return;
-  try { await adminResetVotes(adminPw); showMsg('act-msg', 'Alle Stimmen wurden zurückgesetzt.', 'ok'); }
+  if (!confirm('Die Stimmen des laufenden Monats wirklich zurücksetzen? Vergangene Monate (Ziege des Monats) bleiben erhalten.')) return;
+  try { await adminResetVotes(adminPw); showMsg('act-msg', 'Die Stimmen des laufenden Monats wurden zurückgesetzt.', 'ok'); }
   catch (err) { showMsg('act-msg', err.message || 'Zurücksetzen fehlgeschlagen.', 'err'); }
 }
 
