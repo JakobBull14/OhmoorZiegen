@@ -61,6 +61,8 @@ buildNav('galerie');
 let allPhotos = [];
 let lbIndex = -1;
 
+let allGoats = [];
+
 async function initPage() {
   const box = document.getElementById('gal-masonry');
   box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Fotos …</p>';
@@ -73,6 +75,8 @@ async function initPage() {
     document.getElementById('gal-empty').querySelector('.empty-state-text').textContent = 'Fotos konnten nicht geladen werden.';
     return;
   }
+  try { allGoats = await getGoatsFromApi(); } catch (e) { allGoats = []; }
+
   fillGoatOptions();
   fillYearOptions();
 
@@ -84,8 +88,10 @@ async function initPage() {
 
 function fillGoatOptions() {
   const sel = document.getElementById('gal-goat');
-  const goats = [...new Map(allPhotos.filter(p => p.goat_id).map(p => [p.goat_id, p.goat_name])).entries()]
-    .sort((a, b) => (a[1] || '').localeCompare(b[1] || '', 'de'));
+  const source = allGoats.length
+    ? allGoats.map(g => [g.id, g.name])
+    : [...new Map(allPhotos.filter(p => p.goat_id).map(p => [p.goat_id, p.goat_name])).entries()];
+  const goats = source.sort((a, b) => (a[1] || '').localeCompare(b[1] || '', 'de'));
   sel.innerHTML = '<option value="">Alle Ziegen</option>' +
     goats.map(([id, name]) => `<option value="${id}">${escHtml(name || '?')}</option>`).join('');
 }
