@@ -38,6 +38,51 @@ function validatePlayerName(name) {
   return { ok: true, name: cleaned };
 }
 
+// 'YYYY-MM' for the calendar month `offset` months from now (UTC), e.g. offset -1 = previous month.
+function monthKey(offset = 0) {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+function monthLabel(key) {
+  if (!key) return "";
+  const [y, m] = key.split("-").map(Number);
+  const names = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  return `${names[m - 1] || key} ${y}`;
+}
+
+// Winning goat(s) for a given month_key, tied entries all count as winners.
+async function computeMonthWinner(env, key) {
+  const { results } = await env.DB.prepare(`
+    SELECT goat_id, COUNT(*) AS votes
+    FROM votes
+    WHERE month_key = ?
+    GROUP BY goat_id
+    ORDER BY votes DESC
+  `).bind(key).all();
+
+  if (!results || !results.length) {
+    return { month_key: key, month_label: monthLabel(key), votes: 0, tie: false, goats: [] };
+  }
+
+  const topVotes = results[0].votes;
+  const winnerIds = results.filter(r => r.votes === topVotes).map(r => r.goat_id);
+
+  const placeholders = winnerIds.map(() => "?").join(",");
+  const { results: goats } = await env.DB.prepare(
+    `SELECT id, name, main_image_url FROM goats WHERE id IN (${placeholders})`
+  ).bind(...winnerIds).all();
+
+  return {
+    month_key: key,
+    month_label: monthLabel(key),
+    votes: topVotes,
+    tie: winnerIds.length > 1,
+    goats: goats || []
+  };
+}
+
 function deriveExcerpt(content) {
   const flat = String(content || "").replace(/\s+/g, " ").trim();
   if (flat.length <= 160) return flat;
@@ -669,25 +714,28 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
         if (!deviceToken) return json({ goat_id: null });
 
         const { results } = await env.DB.prepare(
-          "SELECT goat_id FROM votes WHERE device_token = ? LIMIT 1"
-        ).bind(deviceToken).all();
+          "SELECT goat_id FROM votes WHERE device_token = ? AND month_key = ? LIMIT 1"
+        ).bind(deviceToken, monthKey(0)).all();
 
         return json({ goat_id: results?.[0]?.goat_id ?? null });
       }
 
       if (path === "/api/votes/results" && request.method === "GET") {
+        const current = monthKey(0);
         const { results } = await env.DB.prepare(`
           SELECT g.id, g.name, g.main_image_url,
                  COUNT(v.id) AS votes
           FROM goats g
-          LEFT JOIN votes v ON v.goat_id = g.id
+          LEFT JOIN votes v ON v.goat_id = g.id AND v.month_key = ?
           GROUP BY g.id, g.name, g.main_image_url
           ORDER BY votes DESC, g.name ASC
-        `).all();
+        `).bind(current).all();
 
         const total_votes = results.reduce((sum, row) => sum + Number(row.votes || 0), 0);
 
         return json({
+          month_key: current,
+          month_label: monthLabel(current),
           total_votes,
           results: results.map(r => ({
             id: r.id,
@@ -702,6 +750,7 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
         const body = await request.json();
         const goatId = Number(body.goat_id);
         const deviceToken = String(body.device_token || "").trim();
+        const current = monthKey(0);
 
         if (!goatId || !deviceToken) {
           return json({ error: "Ungültige Abstimmung." }, 400);
@@ -715,22 +764,31 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
           return json({ error: "Ziege nicht gefunden." }, 404);
         }
 
-        const existing = await env.DB.prepare(
-          "SELECT id FROM votes WHERE device_token = ? LIMIT 1"
-        ).bind(deviceToken).first();
-
-        if (existing) {
-          await env.DB.prepare(
-            "UPDATE votes SET goat_id = ?, created_at = CURRENT_TIMESTAMP WHERE device_token = ?"
-          ).bind(goatId, deviceToken).run();
-        } else {
-          await env.DB.prepare(`
-            INSERT INTO votes (goat_id, device_token) VALUES (?, ?)
-            ON CONFLICT(device_token) DO UPDATE SET goat_id = excluded.goat_id
-          `).bind(goatId, deviceToken).run();
-        }
+        await env.DB.prepare(`
+          INSERT INTO votes (goat_id, device_token, month_key) VALUES (?, ?, ?)
+          ON CONFLICT(device_token, month_key) DO UPDATE SET goat_id = excluded.goat_id, created_at = CURRENT_TIMESTAMP
+        `).bind(goatId, deviceToken, current).run();
 
         return json({ ok: true, goat_id: goatId });
+      }
+
+      // ================= ZIEGE DES MONATS =================
+      if (path === "/api/month/winner" && request.method === "GET") {
+        const winner = await computeMonthWinner(env, monthKey(-1));
+        return json(winner);
+      }
+
+      if (path === "/api/month/history" && request.method === "GET") {
+        const current = monthKey(0);
+        const { results } = await env.DB.prepare(
+          "SELECT DISTINCT month_key FROM votes WHERE month_key IS NOT NULL AND month_key < ? ORDER BY month_key DESC"
+        ).bind(current).all();
+
+        const history = [];
+        for (const row of results || []) {
+          history.push(await computeMonthWinner(env, row.month_key));
+        }
+        return json(history.filter(m => m.goats.length));
       }
 
       if (path === "/api/leaderboard" && request.method === "GET") {
@@ -935,9 +993,11 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
       }
 
       if (path === "/api/admin/votes/reset" && request.method === "POST") {
+        // Setzt absichtlich nur den laufenden Monat zurück: die Monatshistorie
+        // ("Ziege des Monats") baut auf den dauerhaft gespeicherten Stimmen
+        // vergangener Monate auf und darf nicht verloren gehen.
         if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
-        await env.DB.prepare("DELETE FROM votes").run();
-        await env.DB.prepare("DELETE FROM sqlite_sequence WHERE name = 'votes'").run();
+        await env.DB.prepare("DELETE FROM votes WHERE month_key = ?").bind(monthKey(0)).run();
         return json({ ok: true });
       }
 

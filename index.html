@@ -32,6 +32,9 @@
   <!-- Neuester Blogbeitrag -->
   <div id="blog-teaser" class="hidden"></div>
 
+  <!-- Ziege des Monats -->
+  <div id="month-teaser" class="hidden"></div>
+
   <!-- Neueste Fotos -->
   <div id="gallery-teaser" class="hidden"></div>
 
@@ -126,6 +129,53 @@ async function loadBlogTeaser() {
   } catch (e) { console.warn('Blogbeitrag konnte nicht geladen werden.', e); }
 }
 
+async function loadMonthTeaser() {
+  const box = document.getElementById('month-teaser');
+  try {
+    const month = await fetchMonthWinner();
+    if (month.goats.length) {
+      const g = month.goats[0];
+      const photo = g.foto || g.main_image_url;
+      box.innerHTML = `
+        <div style="display:flex;gap:14px;align-items:center;background:var(--clr-card);border:1px solid var(--clr-border-soft);border-radius:var(--radius-lg);padding:12px;margin-bottom:16px">
+          ${photo
+            ? `<img src="${escHtml(photo)}" alt="${escHtml(g.name)}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;flex-shrink:0">`
+            : `<span style="font-size:2rem;flex-shrink:0">🐐</span>`}
+          <div style="min-width:0;flex:1">
+            <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⭐ Ziege des Monats · ${escHtml(month.month_label)}</div>
+            <div style="font-weight:600;font-size:14px">${monthWinnerNamesHtml(month)}${month.tie ? ' (geteilter Sieg)' : ''}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <a href="/OhmoorZiegen/ziege.html?id=${g.id}" class="btn-secondary" style="padding:6px 12px;font-size:12px">Zur Ziege</a>
+            <a href="/OhmoorZiegen/monat.html" class="btn-primary" style="padding:6px 12px;font-size:12px">Abstimmen</a>
+          </div>
+        </div>`;
+      box.classList.remove('hidden');
+      return;
+    }
+
+    // Noch kein abgeschlossener Monat: aktuell führende Ziege zeigen
+    const results = await fetchVoteResults();
+    const sorted = [...(results.results || [])].sort((a, b) => b.votes - a.votes);
+    if (!sorted.length || !sorted[0].votes) return;
+    const leader = sorted[0];
+    box.innerHTML = `
+      <a href="/OhmoorZiegen/monat.html" style="text-decoration:none;color:inherit">
+        <div style="display:flex;gap:14px;align-items:center;background:var(--clr-card);border:1px solid var(--clr-border-soft);border-radius:var(--radius-lg);padding:12px;margin-bottom:16px">
+          ${leader.main_image_url
+            ? `<img src="${escHtml(leader.main_image_url)}" alt="${escHtml(leader.name)}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;flex-shrink:0">`
+            : `<span style="font-size:2rem;flex-shrink:0">🐐</span>`}
+          <div style="min-width:0">
+            <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">🗳️ Abstimmung läuft · ${escHtml(results.month_label || '')}</div>
+            <div style="font-weight:600;font-size:14px">Aktuell führt ${escHtml(leader.name)}</div>
+            <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">Jetzt mitstimmen →</div>
+          </div>
+        </div>
+      </a>`;
+    box.classList.remove('hidden');
+  } catch (e) { console.warn('Ziege des Monats konnte nicht geladen werden.', e); }
+}
+
 async function loadGalleryTeaser() {
   const box = document.getElementById('gallery-teaser');
   try {
@@ -162,6 +212,7 @@ async function initPage() {
   renderGallery();
   await loadPlayerCount();
   await loadBlogTeaser();
+  await loadMonthTeaser();
   await loadGalleryTeaser();
 }
 

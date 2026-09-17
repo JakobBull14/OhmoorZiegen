@@ -18,7 +18,14 @@
 
 <main class="app-main">
   <div class="page-title">⭐ Ziege des Monats</div>
-  <div id="gotm-body"></div>
+
+  <div id="month-winner-section"></div>
+
+  <div id="month-current-section">
+    <p style="font-size:14px;color:var(--clr-text-muted)">Lade Abstimmung ...</p>
+  </div>
+
+  <div id="month-history-section"></div>
 </main>
 
 <script src="/OhmoorZiegen/data.js"></script>
@@ -27,86 +34,58 @@
 buildNav('monat');
 
 let goats = [];
-let voteResults = { total_votes: 0, counts: {} };
+let voteResults = { total_votes: 0, results: [], month_label: '' };
 
-function buildWinnerCard(sorted, total) {
-  const w = sorted[0];
-  if (!w) {
-    return `<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Ziegen gefunden.</p>`;
-  }
-
-  const wph = w.foto
-    ? `<img src="${escHtml(w.foto)}" alt="${escHtml(w.name)}" onerror="this.style.display='none'">`
-    : escHtml(w.e);
-
-  return `
-    <div class="gotm-card">
-      <div class="gotm-photo">${wph}</div>
-      <div>
-        <div class="gotm-label">Ziege des Monats</div>
-        <div class="gotm-name">${escHtml(w.name)}</div>
-        <div class="gotm-sub">${escHtml(w.nick)} · ${escHtml(w.character)}</div>
-        <div class="gotm-votes">♥ ${w.votes} Stimmen${total > 0 ? ` · ${Math.round(w.votes / total * 100)}%` : ''}</div>
-      </div>
-    </div>`;
+function goatPhotoHtml(g, size) {
+  return g.foto || g.main_image_url
+    ? `<img src="${escHtml(g.foto || g.main_image_url)}" alt="${escHtml(g.name)}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`
+    : `<span style="font-size:${Math.round(size * 0.6)}px">${escHtml(g.e || '🐐')}</span>`;
 }
 
-function render() {
-  const body = document.getElementById('gotm-body');
-  if (!goats.length) {
-    body.innerHTML = `<p style="font-size:14px;color:var(--clr-text-muted)">Lade Abstimmung ...</p>`;
-    return;
-  }
+// ── Amtierender Gewinner des abgeschlossenen Vormonats ──
+async function loadMonthWinner() {
+  const box = document.getElementById('month-winner-section');
+  try {
+    const month = await fetchMonthWinner();
+    if (!month.goats.length) { box.innerHTML = ''; return; }
+
+    const names = monthWinnerNamesHtml(month);
+    box.innerHTML = `
+      <div class="gotm-card">
+        <div style="display:flex;gap:10px">
+          ${month.goats.slice(0, 3).map(g => `<div class="gotm-photo" style="width:64px;height:64px">${goatPhotoHtml(g, 64)}</div>`).join('')}
+        </div>
+        <div>
+          <div class="gotm-label">${month.tie ? 'Ziegen des Monats (geteilter Sieg)' : 'Ziege des Monats'} · ${escHtml(month.month_label)}</div>
+          <div class="gotm-name">${names}</div>
+          <div class="gotm-votes">♥ ${month.votes} Stimme${month.votes !== 1 ? 'n' : ''}</div>
+        </div>
+      </div>`;
+  } catch (e) { console.warn('Monatssieger konnte nicht geladen werden.', e); box.innerHTML = ''; }
+}
+
+// ── Laufende, noch nicht abgeschlossene Abstimmung ──
+function renderCurrentVote() {
+  const box = document.getElementById('month-current-section');
+  if (!goats.length) { box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Abstimmung ...</p>'; return; }
 
   const voteMap = {};
+  (voteResults.results || []).forEach(r => { voteMap[r.id] = Number(r.votes || 0); });
 
-  if (Array.isArray(voteResults)) {
-    voteResults.forEach(item => {
-      const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
-      const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
-      if (goatId) voteMap[goatId] = votes;
-    });
-  } else if (voteResults && typeof voteResults === 'object') {
-    const list = Array.isArray(voteResults.results) ? voteResults.results : null;
-
-    if (list) {
-      list.forEach(item => {
-        const goatId = Number(item.goat_id ?? item.id ?? item.goatId);
-        const votes = Number(item.votes ?? item.vote_count ?? item.count ?? 0);
-        if (goatId) voteMap[goatId] = votes;
-      });
-    } else if (voteResults.counts && typeof voteResults.counts === 'object') {
-      Object.entries(voteResults.counts).forEach(([key, value]) => {
-        const goatId = Number(key);
-        const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
-        if (goatId) voteMap[goatId] = votes;
-      });
-    } else {
-      Object.entries(voteResults).forEach(([key, value]) => {
-        const goatId = Number(key);
-        const votes = Number(value?.votes ?? value?.vote_count ?? value ?? 0);
-        if (goatId) voteMap[goatId] = votes;
-      });
-    }
-  }
-
-  const enriched = goats.map(g => ({
-    ...g,
-    votes: Number(voteMap[g.id] || 0)
-  }));
-
+  const enriched = goats.map(g => ({ ...g, votes: voteMap[g.id] || 0 }));
   const sorted = [...enriched].sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'de'));
-  const total = enriched.reduce((sum, g) => sum + g.votes, 0);
+  const total = voteResults.total_votes || 0;
   const votedId = getVotedId();
+  const leader = total > 0 ? sorted[0] : null;
 
-  body.innerHTML = `
-    ${buildWinnerCard(sorted, total)}
+  box.innerHTML = `
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--clr-blue);margin:24px 0 8px">
+      🗳️ Aktuelle Abstimmung · ${escHtml(voteResults.month_label || '')} läuft noch
+    </div>
 
-    ${total === 0
-      ? `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:16px">
-           Noch keine Stimmen – stimme jetzt für deine Lieblingsziege ab!
-         </p>`
-      : ''}
+    ${leader
+      ? `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:12px">Aktuell führt <strong style="color:var(--clr-text)">${escHtml(leader.name)}</strong> – das Ergebnis steht erst am Monatsende fest.</p>`
+      : `<p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:12px">Noch keine Stimmen – stimme jetzt für deine Lieblingsziege ab!</p>`}
 
     <p style="font-size:13px;color:var(--clr-text-muted);margin:0 0 16px">
       ${votedId === null
@@ -133,7 +112,6 @@ function render() {
                   ? 'background:linear-gradient(90deg, rgba(205,127,50,0.22), rgba(205,127,50,0.06));border:1px solid rgba(205,127,50,0.42);box-shadow:0 6px 16px rgba(205,127,50,0.14);'
                   : '')
           : '';
-
         const fillStyle = sorted.length >= 3
           ? (g.id === sorted[0].id
               ? 'background:linear-gradient(90deg, #d4af37, #f3d46b);'
@@ -158,12 +136,34 @@ function render() {
     </div>`;
 }
 
+// ── Bisherige Ziegen des Monats ──
+async function loadMonthHistory() {
+  const box = document.getElementById('month-history-section');
+  try {
+    const history = await fetchMonthHistory();
+    if (!history.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--clr-text-faint);margin:28px 0 10px">📜 Bisherige Ziegen des Monats</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${history.map(m => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--clr-border-soft);border-radius:12px;background:var(--clr-bg)">
+            <div style="display:flex;gap:-6px">${m.goats.slice(0, 3).map(g => goatPhotoHtml(g, 32)).join('')}</div>
+            <div style="flex:1;font-size:13px">
+              <strong>${monthWinnerNamesHtml(m)}</strong>
+              <span style="color:var(--clr-text-muted)"> · ${escHtml(m.month_label)}${m.tie ? ' (geteilter Sieg)' : ''}</span>
+            </div>
+            <span style="font-size:12px;color:var(--clr-text-muted)">♥ ${m.votes}</span>
+          </div>`).join('')}
+      </div>`;
+  } catch (e) { console.warn('Monatshistorie konnte nicht geladen werden.', e); box.innerHTML = ''; }
+}
+
 async function doVote(id) {
   try {
     await submitVote(id);
     await fetchCurrentVote();
     voteResults = await fetchVoteResults();
-    render();
+    renderCurrentVote();
   } catch (err) {
     alert(err.message || 'Abstimmung fehlgeschlagen.');
   }
@@ -176,19 +176,17 @@ async function initPage() {
     goats = getGoats();
   }
 
-  try {
-    await fetchCurrentVote();
-  } catch (err) {
-    // lokaler Fallback bleibt erhalten
-  }
+  try { await fetchCurrentVote(); } catch (err) {}
 
   try {
     voteResults = await fetchVoteResults();
   } catch (err) {
-    voteResults = { total_votes: 0, counts: {} };
+    voteResults = { total_votes: 0, results: [], month_label: '' };
   }
 
-  render();
+  renderCurrentVote();
+  await loadMonthWinner();
+  await loadMonthHistory();
 }
 
 initPage();

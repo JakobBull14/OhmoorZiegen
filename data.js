@@ -664,3 +664,23 @@ async function adminUploadGalleryImage(file, adminPassword) {
 function galleryDateLabel(photo) {
   return blogDateLabel(photo && (photo.photo_date || photo.created_at));
 }
+
+// ══════════════════════════════════════════
+// ZIEGE DES MONATS
+// ══════════════════════════════════════════
+async function fetchMonthWinner() {
+  const res = await fetch(`${API_BASE}/api/month/winner`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Month API ${res.status}`);
+  return await res.json();
+}
+
+async function fetchMonthHistory() {
+  const res = await fetch(`${API_BASE}/api/month/history`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Month API ${res.status}`);
+  return await res.json();
+}
+
+function monthWinnerNamesHtml(month) {
+  if (!month || !month.goats.length) return '';
+  return month.goats.map(g => escHtml(g.name)).join(' & ');
+}
