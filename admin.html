@@ -363,7 +363,11 @@
               <div id="blog-form-title" style="font-weight:700;margin-bottom:10px">Neuen Beitrag anlegen</div>
               <div class="form-grid">
                 <div class="f-group"><label>Titel *</label><input id="b-title" placeholder="z.B. Frühling im Ziegengehege"></div>
-                <div class="f-group"><label>Kategorie</label><input id="b-category" placeholder="z.B. Neues von den Ziegen"></div>
+                <div class="f-group">
+                  <label>Kategorie</label>
+                  <select id="b-category" onchange="updateCategoryPreview()"></select>
+                  <div id="b-category-preview" style="margin-top:6px"></div>
+                </div>
               </div>
               <div class="f-group" style="margin-top:12px"><label>Tags (mit Komma getrennt)</label><input id="b-tags" placeholder="z.B. Frühling, Nachwuchs"></div>
 
@@ -1000,7 +1004,21 @@ let cloudBlogPosts = [];
 let editingBlogId = null;
 let pendingBlogCoverUrl = '';
 
+function fillBlogCategorySelect() {
+  const sel = document.getElementById('b-category');
+  if (!sel || sel.options.length) return;
+  sel.innerHTML = '<option value="">Keine Kategorie</option>' +
+    BLOG_CATEGORIES.map(c => `<option value="${escHtml(c.name)}">${c.emoji} ${escHtml(c.name)}</option>`).join('');
+}
+
+function updateCategoryPreview() {
+  const box = document.getElementById('b-category-preview');
+  const value = document.getElementById('b-category').value;
+  box.innerHTML = value ? blogCategoryBadgeHtml(value) : '';
+}
+
 async function loadBlogAdmin() {
+  fillBlogCategorySelect();
   const box = document.getElementById('blog-list');
   box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Beiträge ...</p>';
   try {
@@ -1017,8 +1035,9 @@ function renderBlogList() {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <div>
           <div style="font-weight:700">${escHtml(p.title)}</div>
-          <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">
-            ${p.category ? escHtml(p.category) + ' · ' : ''}${p.published_at ? escHtml(blogDateLabel(p.published_at)) : 'Noch nicht veröffentlicht'}
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--clr-text-muted);margin-top:4px;flex-wrap:wrap">
+            ${p.category ? blogCategoryBadgeHtml(p.category) : ''}
+            <span>${p.published_at ? escHtml(blogDateLabel(p.published_at)) : 'Noch nicht veröffentlicht'}</span>
           </div>
         </div>
         <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${p.status === 'published' ? 'background:var(--clr-green-light);color:var(--clr-green)' : 'background:var(--clr-bg-subtle);color:var(--clr-text-muted)'}">
@@ -1043,8 +1062,10 @@ function startEditBlogPost(id) {
   const post = cloudBlogPosts.find(p => p.id === id);
   if (!post) return;
   editingBlogId = id;
+  fillBlogCategorySelect();
   document.getElementById('b-title').value = post.title || '';
   document.getElementById('b-category').value = post.category || '';
+  updateCategoryPreview();
   document.getElementById('b-tags').value = post.tags || '';
   document.getElementById('b-excerpt').value = post.excerpt || '';
   document.getElementById('b-content').value = post.content || '';
@@ -1065,6 +1086,7 @@ function cancelEditBlogPost() {
   pendingBlogCoverUrl = '';
   ['b-title','b-category','b-tags','b-excerpt','b-content','b-cover-url'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-status').value = 'draft';
+  updateCategoryPreview();
   renderBlogCoverPreview('');
   document.getElementById('b-save-btn').textContent = 'Beitrag speichern';
   document.getElementById('b-cancel-btn').classList.add('hidden');

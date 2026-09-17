@@ -72,9 +72,10 @@ async function initPage() {
 
 function fillCategoryOptions() {
   const sel = document.getElementById('blog-category');
-  const cats = [...new Set(allPosts.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+  const used = new Set(allPosts.map(p => p.category).filter(Boolean));
+  const cats = BLOG_CATEGORIES.filter(c => used.has(c.name));
   sel.innerHTML = '<option value="">Alle Kategorien</option>' +
-    cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    cats.map(c => `<option value="${escHtml(c.name)}">${c.emoji} ${escHtml(c.name)}</option>`).join('');
 }
 
 function fillYearOptions() {
@@ -120,21 +121,24 @@ function render() {
     ? `${allPosts.length} Beiträge`
     : `${filtered.length} von ${allPosts.length} Beiträgen`;
 
-  grid.innerHTML = filtered.map(p => `
-    <a class="goat-card" href="/OhmoorZiegen/beitrag.html?id=${p.id}" style="text-decoration:none">
+  grid.innerHTML = filtered.map(p => {
+    const catColor = p.category ? blogCategoryInfo(p.category).color : null;
+    return `
+    <a class="goat-card" href="/OhmoorZiegen/beitrag.html?id=${p.id}" style="text-decoration:none${catColor ? `;border-top:4px solid var(--clr-${catColor})` : ''}">
       <div class="goat-card-image" style="aspect-ratio:16/10">
         ${p.cover_image_url
           ? `<img src="${escHtml(p.cover_image_url)}" alt="${escHtml(p.title)}" loading="lazy">`
           : `<span style="font-size:3rem">📰</span>`}
-        ${p.category ? `<div class="gc-badge">${escHtml(p.category)}</div>` : ''}
       </div>
       <div class="goat-card-body">
+        ${p.category ? `<div style="margin-bottom:8px">${blogCategoryBadgeHtml(p.category)}</div>` : ''}
         <div class="goat-card-name">${escHtml(p.title)}</div>
         <div class="goat-card-nick">${escHtml(blogDateLabel(p.published_at))}</div>
         <div style="font-size:13px;color:var(--clr-text-muted);line-height:1.5;margin-bottom:10px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${escHtml(p.excerpt || '')}</div>
         <span style="font-size:13px;color:var(--clr-blue);font-weight:600">Weiterlesen →</span>
       </div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 }
 
 initPage();

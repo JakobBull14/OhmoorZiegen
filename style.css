@@ -32,6 +32,13 @@
   --clr-yellow:      #f9ab00;
   --clr-yellow-light:#fef7e0;
 
+  --clr-purple:      #9334e6;
+  --clr-purple-light:#f3e8fd;
+  --clr-pink:        #e52592;
+  --clr-pink-light:  #fce8f3;
+  --clr-teal:        #009688;
+  --clr-teal-light:  #e0f2f1;
+
   /* Typografie */
   --font-display: 'Google Sans', 'Segoe UI', system-ui, sans-serif;
   --font-body:    'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -85,6 +92,10 @@
   --clr-green-light: #052e16;
   --clr-red-light:   #450a0a;
   --clr-yellow-light:#451a03;
+
+  --clr-purple-light:#2e1065;
+  --clr-pink-light:  #500724;
+  --clr-teal-light:  #042f2c;
 }
 
 /* ── RESET ── */
@@ -544,6 +555,14 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 @media (max-width: 480px) {
   .blog-filter-bar { flex-direction: column; }
   .blog-filter-bar select.form-input { width: 100% !important; }
+}
+
+.blog-cat-chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
 }
 
 .blog-post-content {

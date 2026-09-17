@@ -105,9 +105,10 @@ async function loadBlogTeaser() {
     const posts = await fetchBlogPosts();
     if (!posts.length) return;
     const p = posts[0];
+    const catColor = p.category ? blogCategoryInfo(p.category).color : null;
     box.innerHTML = `
       <a href="/OhmoorZiegen/beitrag.html?id=${p.id}" style="text-decoration:none;color:inherit">
-        <div style="display:flex;gap:14px;align-items:center;background:var(--clr-card);border:1px solid var(--clr-border-soft);border-radius:var(--radius-lg);padding:12px;margin-bottom:16px">
+        <div style="display:flex;gap:14px;align-items:center;background:var(--clr-card);border:1px solid var(--clr-border-soft);${catColor ? `border-left:4px solid var(--clr-${catColor});` : ''}border-radius:var(--radius-lg);padding:12px;margin-bottom:16px">
           ${p.cover_image_url
             ? `<img src="${escHtml(p.cover_image_url)}" alt="${escHtml(p.title)}" style="width:72px;height:72px;object-fit:cover;border-radius:var(--radius-md);flex-shrink:0">`
             : `<span style="font-size:2rem;flex-shrink:0">📰</span>`}

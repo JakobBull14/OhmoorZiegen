@@ -527,6 +527,25 @@ async function adminDeleteGoatImage(imageId, adminPassword) {
 // ══════════════════════════════════════════
 // BLOG
 // ══════════════════════════════════════════
+const BLOG_CATEGORIES = [
+  { name: 'Neues von den Ziegen', emoji: '🐐', color: 'blue'   },
+  { name: 'Schule',               emoji: '🎓', color: 'purple' },
+  { name: 'Nachwuchs',            emoji: '🍼', color: 'pink'   },
+  { name: 'Pflege',               emoji: '🧼', color: 'green'  },
+  { name: 'Veranstaltungen',      emoji: '🎉', color: 'yellow' },
+  { name: 'Geschichten',          emoji: '📖', color: 'teal'   },
+];
+
+function blogCategoryInfo(name) {
+  return BLOG_CATEGORIES.find(c => c.name === name) || { name: name || '', emoji: '📰', color: 'blue' };
+}
+
+function blogCategoryBadgeHtml(name) {
+  if (!name) return '';
+  const info = blogCategoryInfo(name);
+  return `<span class="blog-cat-chip" style="background:var(--clr-${info.color}-light);color:var(--clr-${info.color})">${info.emoji} ${escHtml(info.name)}</span>`;
+}
+
 async function fetchBlogPosts(params = {}) {
   const qs = new URLSearchParams();
   if (params.category) qs.set('category', params.category);

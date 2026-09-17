@@ -61,12 +61,13 @@ function renderPost(post) {
     : '';
 
   const tags = String(post.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+  const catColor = post.category ? blogCategoryInfo(post.category).color : null;
 
   document.getElementById('page-body').innerHTML = `
-    <div class="detail-card" style="max-width:760px">
+    <div class="detail-card" style="max-width:760px${catColor ? `;border-top:4px solid var(--clr-${catColor})` : ''}">
       ${coverHtml}
       <div class="detail-body">
-        ${post.category ? `<span class="chip chip-blue" style="margin-bottom:10px;display:inline-block">${escHtml(post.category)}</span>` : ''}
+        ${post.category ? `<div style="margin-bottom:10px">${blogCategoryBadgeHtml(post.category)}</div>` : ''}
         <div class="detail-name">${escHtml(post.title)}</div>
         <div class="detail-nick">${escHtml(blogDateLabel(post.published_at))}</div>
         <div class="blog-post-content">${escHtml(post.content)}</div>
