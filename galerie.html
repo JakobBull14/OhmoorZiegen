@@ -123,9 +123,24 @@ function render() {
   const meta = document.getElementById('gal-meta');
 
   if (!filtered.length) {
+    const goatId = document.getElementById('gal-goat').value;
+    const goat = goatId ? allGoats.find(g => String(g.id) === goatId) : null;
+
     box.innerHTML = '';
+
+    if (goat && goat.foto) {
+      meta.textContent = '';
+      empty.classList.remove('hidden');
+      empty.innerHTML = `
+        <p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:14px">Noch keine Galeriefotos von ${escHtml(goat.name)} – hier das Profilbild:</p>
+        <a href="/OhmoorZiegen/ziege.html?id=${goat.id}" style="display:inline-block;width:200px;border-radius:var(--radius-md);overflow:hidden">
+          <img src="${escHtml(goat.foto)}" alt="${escHtml(goat.name)}" style="width:100%;height:auto;display:block">
+        </a>`;
+      return;
+    }
+
+    empty.innerHTML = `<span class="empty-state-icon">📸</span><div class="empty-state-text">Keine Fotos gefunden</div>`;
     empty.classList.remove('hidden');
-    empty.querySelector('.empty-state-text').textContent = 'Keine Fotos gefunden';
     meta.textContent = '';
     return;
   }
