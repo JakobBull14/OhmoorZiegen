@@ -26,32 +26,32 @@
   <div class="about-sections">
     <section class="about-section">
       <h2>🐐 Die Ohmoor-Ziegen</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-ohmoor_ziegen">Text folgt – wird von der Schule ergänzt.</div>
     </section>
 
     <section class="about-section">
       <h2>🏫 Warum gibt es Ziegen an der Schule?</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-warum_schule">Text folgt – wird von der Schule ergänzt.</div>
     </section>
 
     <section class="about-section">
       <h2>🎓 Was lernen Schülerinnen und Schüler durch die Tiere?</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-was_lernen">Text folgt – wird von der Schule ergänzt.</div>
     </section>
 
     <section class="about-section">
       <h2>👥 Wer kümmert sich um die Ziegen?</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-wer_kuemmert">Text folgt – wird von der Schule ergänzt.</div>
     </section>
 
     <section class="about-section">
       <h2>📋 Schulalltag, Verantwortung &amp; Tierwohl</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-schulalltag">Text folgt – wird von der Schule ergänzt.</div>
     </section>
 
     <section class="about-section">
       <h2>📜 Geschichte des Ziegenprojekts</h2>
-      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+      <div class="about-placeholder" id="about-geschichte">Text folgt – wird von der Schule ergänzt.</div>
     </section>
   </div>
 
@@ -75,7 +75,22 @@ async function loadAboutHero() {
   } catch (e) { console.warn('Titelbild konnte nicht geladen werden.', e); }
 }
 
+async function loadAboutContent() {
+  try {
+    const content = await fetchAboutContent();
+    Object.entries(content).forEach(([key, value]) => {
+      if (!value) return;
+      const el = document.getElementById(`about-${key}`);
+      if (!el) return;
+      el.textContent = value;
+      el.classList.remove('about-placeholder');
+      el.classList.add('about-text');
+    });
+  } catch (e) { console.warn('Inhalte konnten nicht geladen werden.', e); }
+}
+
 loadAboutHero();
+loadAboutContent();
 </script>
 </body>
 </html>

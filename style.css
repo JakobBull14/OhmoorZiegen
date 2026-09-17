@@ -606,6 +606,13 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
   border-radius: var(--radius-md);
 }
 
+.about-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--clr-text);
+  white-space: pre-wrap;
+}
+
 /* ── Galerie: Masonry-Grid (kein Zuschneiden der Fotos) ── */
 .gallery-masonry {
   column-count: 4;

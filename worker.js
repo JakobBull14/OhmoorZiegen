@@ -390,6 +390,34 @@ if (factAdminMatch && request.method === 'DELETE') {
   return json({ ok: true });
 }
 
+// ================= ÜBER UNS =================
+const ABOUT_KEYS = ["ohmoor_ziegen", "warum_schule", "was_lernen", "wer_kuemmert", "schulalltag", "geschichte"];
+
+if (path === '/api/about' && request.method === 'GET') {
+  const { results } = await env.DB.prepare(
+    "SELECT key, value FROM app_settings WHERE key LIKE 'about_%'"
+  ).all();
+  const data = {};
+  for (const row of results || []) {
+    data[row.key.replace(/^about_/, '')] = row.value;
+  }
+  return json(data);
+}
+
+if (path === '/api/admin/about' && request.method === 'PUT') {
+  if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+  const body = await request.json();
+  for (const key of ABOUT_KEYS) {
+    if (typeof body[key] === 'string') {
+      await env.DB.prepare(`
+        INSERT INTO app_settings (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `).bind(`about_${key}`, body[key].trim()).run();
+    }
+  }
+  return json({ ok: true });
+}
+
 // ================= FEEDBACK SUBMIT / UPDATE =================
 if (path === '/api/feedback' && request.method === 'POST') {
   const body = await request.json();

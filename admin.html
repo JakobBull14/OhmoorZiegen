@@ -452,6 +452,28 @@
           </div>
         </div>
 
+        <div class="admin-section closed">
+          <div class="admin-section-title" onclick="toggleAccordion(this)">🧑‍🌾 Über uns verwalten</div>
+          <div class="accordion-body">
+            <p style="font-size:13px;color:var(--clr-text-muted);margin:14px 0 16px">
+              Ein Textfeld pro Abschnitt der Seite <a href="/OhmoorZiegen/ueber-uns.html" target="_blank" style="color:var(--clr-blue)">„Über uns"</a> – leer lassen, solange der Text noch fehlt.
+            </p>
+
+            <div class="f-group"><label>🐐 Die Ohmoor-Ziegen</label><textarea id="about-ohmoor_ziegen" style="min-height:90px"></textarea></div>
+            <div class="f-group" style="margin-top:14px"><label>🏫 Warum gibt es Ziegen an der Schule?</label><textarea id="about-warum_schule" style="min-height:90px"></textarea></div>
+            <div class="f-group" style="margin-top:14px"><label>🎓 Was lernen Schülerinnen und Schüler durch die Tiere?</label><textarea id="about-was_lernen" style="min-height:90px"></textarea></div>
+            <div class="f-group" style="margin-top:14px"><label>👥 Wer kümmert sich um die Ziegen?</label><textarea id="about-wer_kuemmert" style="min-height:90px"></textarea></div>
+            <div class="f-group" style="margin-top:14px"><label>📋 Schulalltag, Verantwortung &amp; Tierwohl</label><textarea id="about-schulalltag" style="min-height:90px"></textarea></div>
+            <div class="f-group" style="margin-top:14px"><label>📜 Geschichte des Ziegenprojekts</label><textarea id="about-geschichte" style="min-height:90px"></textarea></div>
+
+            <div class="btn-row" style="margin-top:16px">
+              <button class="btn-primary" onclick="saveAboutContent()">Speichern</button>
+              <a href="/OhmoorZiegen/ueber-uns.html" target="_blank" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center">Vorschau ansehen →</a>
+            </div>
+            <div id="about-msg"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -624,6 +646,7 @@ async function showAdmin() {
   await loadBlogAdmin();
   await loadGalleryAdmin();
   await loadFactsAdmin();
+  await loadAboutAdmin();
   await loadFeedbackAdmin();
   buildNav('admin');
 }
@@ -1079,6 +1102,30 @@ async function addFact() {
     }
     await loadFactsAdmin();
   } catch (err) { showMsg('facts-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
+}
+
+/* ── Über uns ────────────────────────────────────────── */
+const ABOUT_KEYS = ['ohmoor_ziegen', 'warum_schule', 'was_lernen', 'wer_kuemmert', 'schulalltag', 'geschichte'];
+
+async function loadAboutAdmin() {
+  try {
+    const content = await fetchAboutContent();
+    ABOUT_KEYS.forEach(key => {
+      const el = document.getElementById(`about-${key}`);
+      if (el) el.value = content[key] || '';
+    });
+  } catch (e) { showMsg('about-msg', 'Inhalte konnten nicht geladen werden.', 'err'); }
+}
+
+async function saveAboutContent() {
+  const content = {};
+  ABOUT_KEYS.forEach(key => {
+    content[key] = document.getElementById(`about-${key}`).value.trim();
+  });
+  try {
+    await adminSaveAboutContent(content, adminPw);
+    showMsg('about-msg', 'Über-uns-Texte wurden gespeichert.', 'ok');
+  } catch (err) { showMsg('about-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
 }
 
 /* ── Blog ────────────────────────────────────────────── */

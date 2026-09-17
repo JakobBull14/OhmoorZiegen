@@ -684,3 +684,20 @@ function monthWinnerNamesHtml(month) {
   if (!month || !month.goats.length) return '';
   return month.goats.map(g => escHtml(g.name)).join(' & ');
 }
+
+// ══════════════════════════════════════════
+// ÜBER UNS
+// ══════════════════════════════════════════
+async function fetchAboutContent() {
+  const res = await fetch(`${API_BASE}/api/about`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`About API ${res.status}`);
+  return await res.json();
+}
+
+async function adminSaveAboutContent(content, adminPassword) {
+  return await apiRequest('/api/admin/about', {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(content)
+  });
+}
