@@ -134,7 +134,7 @@ function render() {
       empty.innerHTML = `
         <p style="font-size:13px;color:var(--clr-text-muted);margin-bottom:14px">Noch keine Galeriefotos von ${escHtml(goat.name)} – hier das Profilbild:</p>
         <a href="/OhmoorZiegen/ziege.html?id=${goat.id}" style="display:inline-block;width:200px;border-radius:var(--radius-md);overflow:hidden">
-          <img src="${escHtml(goat.foto)}" alt="${escHtml(goat.name)}" style="width:100%;height:auto;display:block">
+          <img src="${escHtml(goat.foto)}" alt="${escHtml(goat.name)}" style="width:100%;height:auto;display:block" onerror="this.parentNode.innerHTML='<span style=\'font-size:3rem\'>🐐</span>'">
         </a>`;
       return;
     }
