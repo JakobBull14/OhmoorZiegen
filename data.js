@@ -114,17 +114,6 @@ async function getGoatsFromApi() {
   return rows.map(mapApiGoat);
 }
 
-async function fetchGoatImages(goatId) {
-  try {
-    const res = await fetch(
-      API_BASE + '/api/goat-images?goat_id=' + goatId + '&t=' + Date.now(),
-      { cache: 'no-store' }
-    );
-    return await res.json();
-  } catch (e) {
-    return [];
-  }
-}
 
 // ══════════════════════════════════════════
 // ZIEGEN-DATEN
@@ -505,24 +494,6 @@ async function adminResetLeaderboard(adminPassword) {
   });
 }
 
-async function adminAddGoatImage(goatId, imageUrl, caption, adminPassword) {
-  return await apiRequest('/api/admin/goat-images', {
-    method: 'POST',
-    headers: { 'X-Admin-Password': adminPassword },
-    body: JSON.stringify({
-      goat_id: goatId,
-      image_url: imageUrl,
-      caption: caption || ''
-    })
-  });
-}
-
-async function adminDeleteGoatImage(imageId, adminPassword) {
-  return await apiRequest(`/api/admin/goat-images/${imageId}`, {
-    method: 'DELETE',
-    headers: { 'X-Admin-Password': adminPassword }
-  });
-}
 
 // ══════════════════════════════════════════
 // BLOG
@@ -592,9 +563,30 @@ async function adminDeleteBlogPost(id, adminPassword) {
   });
 }
 
+// Verkleinert/komprimiert ein Bild vor dem Upload (schnellere mobile Ladezeit).
+// Fällt bei jedem Fehler (z.B. alter Browser) auf die Originaldatei zurück.
+async function resizeImageForUpload(file, maxDim = 1600, quality = 0.85) {
+  try {
+    if (!file.type || !file.type.startsWith('image/')) return file;
+    const bitmap = await createImageBitmap(file);
+    if (bitmap.width <= maxDim && bitmap.height <= maxDim) return file;
+    const scale = maxDim / Math.max(bitmap.width, bitmap.height);
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 async function adminUploadBlogImage(file, adminPassword) {
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file', await resizeImageForUpload(file));
   const res = await fetch(`${API_BASE}/api/admin/upload-blog-image`, {
     method: 'POST',
     headers: { 'X-Admin-Password': adminPassword },
@@ -612,4 +604,63 @@ function blogDateLabel(value) {
   } catch {
     return String(value);
   }
+}
+
+// ══════════════════════════════════════════
+// GALERIE
+// ══════════════════════════════════════════
+async function fetchGalleryPhotos(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.goat_id) qs.set('goat_id', params.goat_id);
+  if (params.year) qs.set('year', params.year);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  const res = await fetch(`${API_BASE}/api/gallery${suffix}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Gallery API ${res.status}`);
+  return await res.json();
+}
+
+async function adminGetAllGalleryPhotos(adminPassword) {
+  return await apiRequest('/api/admin/gallery', {
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminAddGalleryPhoto(photo, adminPassword) {
+  return await apiRequest('/api/admin/gallery', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(photo)
+  });
+}
+
+async function adminUpdateGalleryPhoto(id, photo, adminPassword) {
+  return await apiRequest(`/api/admin/gallery/${id}`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(photo)
+  });
+}
+
+async function adminDeleteGalleryPhoto(id, adminPassword) {
+  return await apiRequest(`/api/admin/gallery/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminUploadGalleryImage(file, adminPassword) {
+  const fd = new FormData();
+  fd.append('file', await resizeImageForUpload(file));
+  const res = await fetch(`${API_BASE}/api/admin/upload-gallery-image`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: fd
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen.');
+  return data;
+}
+
+function galleryDateLabel(photo) {
+  return blogDateLabel(photo && (photo.photo_date || photo.created_at));
 }

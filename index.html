@@ -32,6 +32,9 @@
   <!-- Neuester Blogbeitrag -->
   <div id="blog-teaser" class="hidden"></div>
 
+  <!-- Neueste Fotos -->
+  <div id="gallery-teaser" class="hidden"></div>
+
   <!-- Suchfeld (Mobil) -->
   <div style="position:relative;margin-bottom:16px">
     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:16px;pointer-events:none">🔍</span>
@@ -123,6 +126,29 @@ async function loadBlogTeaser() {
   } catch (e) { console.warn('Blogbeitrag konnte nicht geladen werden.', e); }
 }
 
+async function loadGalleryTeaser() {
+  const box = document.getElementById('gallery-teaser');
+  try {
+    const photos = await fetchGalleryPhotos();
+    if (!photos.length) return;
+    const preview = photos.slice(0, 4);
+    box.innerHTML = `
+      <div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px">📸 Neueste Fotos</div>
+          <a href="/OhmoorZiegen/galerie.html" style="font-size:12px;font-weight:600;color:var(--clr-blue);text-decoration:none">Alle Fotos →</a>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          ${preview.map(p => `
+            <a href="/OhmoorZiegen/galerie.html" style="display:block;aspect-ratio:1;border-radius:10px;overflow:hidden">
+              <img src="${escHtml(p.image_url)}" alt="${escHtml(p.caption || p.goat_name || 'Foto')}" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+            </a>`).join('')}
+        </div>
+      </div>`;
+    box.classList.remove('hidden');
+  } catch (e) { console.warn('Fotos konnten nicht geladen werden.', e); }
+}
+
 async function initPage() {
   try { goats = await getGoatsFromApi(); }
   catch (e) { console.error('API fehlgeschlagen, nutze Fallback.', e); goats = getGoats(); }
@@ -136,6 +162,7 @@ async function initPage() {
   renderGallery();
   await loadPlayerCount();
   await loadBlogTeaser();
+  await loadGalleryTeaser();
 }
 
 function onSearch() {

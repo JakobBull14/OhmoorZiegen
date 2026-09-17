@@ -83,26 +83,7 @@ function renderPage() {
        </div>`
     : `<div class="detail-photo"><span>${goat.e}</span></div>`;
 
-  const galerieHtml = (goat.photos && goat.photos.length)
-    ? `<div style="margin-top:12px">
-         <div style="font-size:13px;color:var(--clr-text-muted);margin:0 0 8px 2px">
-           📷 ${goat.photos.length} Galeriebild${goat.photos.length !== 1 ? 'er' : ''}
-         </div>
-         <div id="carousel-wrap" class="${goat.photos.length > 1 ? 'has-multi' : ''}" style="position:relative;width:100%;aspect-ratio:4/3;background:var(--clr-bg-subtle);overflow:hidden;border-radius:12px">
-           <div class="photo-track" id="ph-track">
-             ${goat.photos.map(s => `<div class="photo-slide"><img src="${s}" alt="${goat.name}"></div>`).join('')}
-           </div>
-           ${goat.photos.length > 1 ? `
-             <div id="ph-counter" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.45);color:#fff;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;pointer-events:none">1 / ${goat.photos.length}</div>
-             <button class="ph-nav l" id="phl" onclick="phNav(-1)">‹</button>
-             <button class="ph-nav r" id="phr" onclick="phNav(1)">›</button>
-             <div class="ph-dots" id="ph-dots">${goat.photos.map((_,i) => `<button class="ph-dot${i===0?' on':''}" onclick="phGo(${i})"></button>`).join('')}</div>
-           ` : ''}
-         </div>
-       </div>`
-    : '';
-
-  const photoHtml = hauptbildHtml + galerieHtml;
+  const photoHtml = hauptbildHtml;
 
   document.getElementById('page-body').innerHTML = `
     <div class="detail-card">
@@ -147,6 +128,7 @@ function renderPage() {
           <div class="detail-field-value" id="f-story">${escHtml(goat.story || '')}</div>
         </div>
 
+        <div id="goat-photos-section"></div>
 
       </div>
 
@@ -164,11 +146,30 @@ function renderPage() {
       </div>
     </div>`;
 
-  // Foto-Navigation init
-  phReset();
-  if (goat.photos && goat.photos.length > 1) {
-    updatePhNav();
-  }
+  loadGoatPhotosSection();
+}
+
+// ── Fotos von dieser Ziege (aus der zentralen Galerie) ──
+async function loadGoatPhotosSection() {
+  const box = document.getElementById('goat-photos-section');
+  if (!box) return;
+  try {
+    const photos = await fetchGalleryPhotos({ goat_id: goat.id });
+    if (!photos.length) { box.innerHTML = ''; return; }
+    const preview = photos.slice(0, 6);
+    box.innerHTML = `
+      <div class="detail-field-label">📷 Fotos von ${escHtml(goat.name)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:8px">
+        ${preview.map(p => `
+          <a href="/OhmoorZiegen/galerie.html?goat=${goat.id}" style="display:block;aspect-ratio:1;border-radius:10px;overflow:hidden">
+            <img src="${escHtml(p.image_url)}" alt="${escHtml(p.caption || goat.name)}" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+          </a>`).join('')}
+      </div>
+      ${photos.length > preview.length
+        ? `<a href="/OhmoorZiegen/galerie.html?goat=${goat.id}" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--clr-blue);font-weight:600">Alle ${photos.length} Fotos ansehen →</a>`
+        : ''}
+    `;
+  } catch (e) { console.warn('Fotos konnten nicht geladen werden.', e); }
 }
 
 // ── Geburtsjahr → Alter ──
@@ -181,35 +182,6 @@ function displayAge(val) {
     return age === 1 ? '1 Jahr' : `${age} Jahre`;
   }
   return s; // altes Format, unverändert anzeigen
-}
-
-// ── Foto-Karussel ──
-let phIdx = 0;
-
-function phReset() { phIdx = 0; }
-
-function phNav(dir) {
-  phIdx = Math.max(0, Math.min((goat.photos || []).length - 1, phIdx + dir));
-  phUpdateDisplay();
-}
-
-function phGo(i) { phIdx = i; phUpdateDisplay(); }
-
-function phUpdateDisplay() {
-  const wrap  = document.getElementById('carousel-wrap');
-  const track = document.getElementById('ph-track');
-  if (track && wrap) track.style.transform = `translateX(-${phIdx * wrap.offsetWidth}px)`;
-  updatePhNav();
-  document.querySelectorAll('.ph-dot').forEach((d, i) => d.classList.toggle('on', i === phIdx));
-  const counter = document.getElementById('ph-counter');
-  if (counter) counter.textContent = `${phIdx + 1} / ${(goat.photos || []).length}`;
-}
-
-function updatePhNav() {
-  const l = document.getElementById('phl');
-  const r = document.getElementById('phr');
-  if (l) l.disabled = phIdx === 0;
-  if (r) r.disabled = phIdx >= (goat.photos || []).length - 1;
 }
 
 // ── Abstimmen ──

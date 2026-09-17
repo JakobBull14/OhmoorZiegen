@@ -243,36 +243,10 @@
               </div>
             </div>
 
-            <!-- Galeriebilder -->
-            <div style="margin-top:12px;padding:14px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card)">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px">
-                <div style="font-weight:700">Galeriebilder</div>
-                <div id="gallery-slots-info" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--clr-bg-subtle);border:1px solid var(--clr-border)"></div>
-              </div>
-              <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-bottom:12px"></div>
-              <div id="gallery-add-row">
-                <div class="f-group">
-                  <label style="font-size:13px">📁 Bild hochladen</label>
-                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                    <input type="file" id="gallery-file-input" accept="image/jpeg,image/png,image/webp"
-                           class="form-input" style="flex:1;min-width:0;padding:6px 10px;font-size:13px">
-                    <button class="btn-primary" id="gallery-upload-btn" onclick="uploadGalleryImage()"
-                            style="white-space:nowrap;padding:8px 14px;font-size:13px">Hochladen</button>
-                  </div>
-                </div>
-
-                <div style="display:flex;align-items:center;gap:10px;margin:8px 0;color:var(--clr-text-muted);font-size:12px">
-                  <div style="flex:1;height:1px;background:var(--clr-border)"></div>oder URL
-                  <div style="flex:1;height:1px;background:var(--clr-border)"></div>
-                </div>
-
-                <div style="display:flex;gap:8px;flex-wrap:wrap">
-                  <input id="gallery-url-input" class="form-input" style="flex:1;min-width:0;font-size:13px"
-                         placeholder="https://...">
-                  <button class="btn-primary" onclick="addGalleryImage()"
-                          style="white-space:nowrap;padding:8px 14px;font-size:13px">URL hinzufügen</button>
-                </div>
-              </div>
+            <!-- Weitere Fotos -->
+            <div style="margin-top:12px;padding:14px;border:1px solid var(--clr-border);border-radius:14px;background:var(--clr-card);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div style="font-size:13px;color:var(--clr-text-muted)">Weitere Fotos dieser Ziege werden jetzt zentral in der <strong>📸 Galerie verwalten</strong> gepflegt.</div>
+              <button class="btn-secondary" onclick="jumpToGalleryForGoat()">Zur Galerie →</button>
             </div>
 
             <div id="img-msg"></div>
@@ -374,6 +348,54 @@
                 </div>
               </div>
               <div id="blog-msg"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section closed">
+          <div class="admin-section-title" onclick="toggleAccordion(this)">📸 Galerie verwalten</div>
+          <div class="accordion-body">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 16px">
+              <button class="btn-primary" onclick="loadGalleryAdmin()">Fotos neu laden</button>
+              <select id="gal-admin-goat" class="form-input" style="width:auto" onchange="renderGalleryAdminList()">
+                <option value="">Alle Ziegen</option>
+              </select>
+            </div>
+            <div id="gal-admin-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+              <div id="gal-form-title" style="font-weight:700;margin-bottom:14px">Neues Foto hinzufügen</div>
+
+              <div class="f-group">
+                <label>Bilddatei</label>
+                <div id="gal-photo-preview" style="margin-bottom:8px"></div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="g-photo-file" accept="image/jpeg,image/png,image/webp"
+                         class="form-input" style="flex:1;min-width:0;padding:6px 10px;font-size:13px">
+                  <button class="btn-primary" id="g-photo-upload-btn" onclick="uploadGalleryPhotoFile()"
+                          style="white-space:nowrap;padding:8px 14px;font-size:13px">Hochladen</button>
+                </div>
+                <input id="g-photo-url" class="form-input" style="margin-top:8px;font-size:13px" placeholder="oder Bild-URL direkt eingeben">
+              </div>
+
+              <div class="form-grid" style="margin-top:12px">
+                <div class="f-group"><label>Bildunterschrift</label><input id="g-photo-caption" placeholder="z.B. Mittagspause im Gehege"></div>
+                <div class="f-group"><label>Datum</label><input id="g-photo-date" type="date"></div>
+              </div>
+
+              <div class="form-grid" style="margin-top:12px">
+                <div class="f-group">
+                  <label>Ziege zuordnen (optional)</label>
+                  <select id="g-photo-goat"><option value="">Keine bestimmte Ziege</option></select>
+                </div>
+                <div class="f-group"><label>Album (optional)</label><input id="g-photo-album" placeholder="z.B. Ausflug 2026"></div>
+              </div>
+
+              <div class="btn-row">
+                <button class="btn-primary" id="g-photo-save-btn" onclick="saveGalleryPhoto()">Foto speichern</button>
+                <button class="btn-danger hidden" id="g-photo-cancel-btn" onclick="cancelEditGalleryPhoto()">Abbrechen</button>
+              </div>
+              <div id="gal-msg"></div>
             </div>
           </div>
         </div>
@@ -600,6 +622,7 @@ async function showAdmin() {
   await loadCloudGoats();
   await loadQuizAdmin();
   await loadBlogAdmin();
+  await loadGalleryAdmin();
   await loadFactsAdmin();
   await loadFeedbackAdmin();
   buildNav('admin');
@@ -735,40 +758,20 @@ async function loadImageManager() {
   if (!goat) return;
   document.getElementById('main-image-url').value = goat.foto || '';
   renderMainImagePreview(goat.foto || '');
-  try {
-    const res = await fetch(API_BASE + `/api/goat-images?goat_id=${goatId}`);
-    const images = await res.json();
-    renderGalleryManager(goatId, images);
-  } catch {
-    document.getElementById('gallery-slots-info').textContent = 'Fehler beim Laden.';
-  }
 }
 
-function renderGalleryManager(goatId, images) {
-  const used = images.length;
-  const free = 5 - used;
-  const info = document.getElementById('gallery-slots-info');
-  const grid = document.getElementById('gallery-grid');
-  const addRow = document.getElementById('gallery-add-row');
-
-  info.textContent = `${used}/5 belegt · ${free} frei`;
-  info.style.color = used >= 5 ? 'var(--clr-yellow)' : 'var(--clr-text-muted)';
-
-  if (!images.length) {
-    grid.innerHTML = '<p style="font-size:13px;color:var(--clr-text-muted);margin:0 0 4px">Noch keine Galeriebilder.</p>';
-  } else {
-    grid.innerHTML = images.map(img => `
-      <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--clr-border);background:var(--clr-bg-subtle)">
-        <img src="${escHtml(img.image_url)}" alt="Galeriebild"
-             style="width:100%;height:100%;object-fit:cover"
-             onerror="this.style.opacity=0">
-        <button onclick="deleteGalleryImage(${img.id})"
-                title="Löschen"
-                style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;line-height:22px;text-align:center;padding:0">✕</button>
-      </div>`).join('');
+function jumpToGalleryForGoat() {
+  const goatId = document.getElementById('img-goat-sel').value;
+  switchTab('inhalte');
+  const sec = document.getElementById('gal-admin-goat')?.closest('.admin-section');
+  if (sec) sec.classList.remove('closed');
+  fillGalleryGoatSelects();
+  if (goatId) {
+    document.getElementById('gal-admin-goat').value = goatId;
+    document.getElementById('g-photo-goat').value = goatId;
+    renderGalleryAdminList();
   }
-
-  addRow.style.display = free > 0 ? '' : 'none';
+  document.getElementById('tab-inhalte').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function uploadMainImage() {
@@ -783,7 +786,6 @@ async function uploadMainImage() {
     fd.append('file', file);
     fd.append('goat_id', String(goatId));
     fd.append('caption', '');
-    fd.append('skip_gallery', 'true');
     const res = await fetch(API_BASE + '/api/admin/upload-image', {
       method: 'POST', headers: { 'X-Admin-Password': adminPw }, body: fd
     });
@@ -799,51 +801,6 @@ async function uploadMainImage() {
   finally { btn.disabled = false; btn.textContent = 'Hochladen & setzen'; }
 }
 
-async function uploadGalleryImage() {
-  const goatId = Number(document.getElementById('img-goat-sel').value);
-  const fileInput = document.getElementById('gallery-file-input');
-  const file = fileInput.files[0];
-  if (!file) { showMsg('img-msg', 'Bitte eine Bilddatei auswählen.', 'err'); return; }
-  const res2 = await fetch(API_BASE + `/api/goat-images?goat_id=${goatId}`);
-  const existing = await res2.json();
-  if (existing.length >= 5) { showMsg('img-msg', 'Bereits 5 Galeriebilder – bitte zuerst eines löschen.', 'err'); return; }
-  const btn = document.getElementById('gallery-upload-btn');
-  btn.disabled = true; btn.textContent = 'Wird hochgeladen …';
-  try {
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('goat_id', String(goatId));
-    fd.append('caption', '');
-    const res = await fetch(API_BASE + '/api/admin/upload-image', {
-      method: 'POST', headers: { 'X-Admin-Password': adminPw }, body: fd
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen.');
-    fileInput.value = '';
-    showMsg('img-msg', 'Galeriebild wurde hochgeladen.', 'ok');
-    await loadImageManager();
-    await loadCloudGoats();
-  } catch (err) { showMsg('img-msg', err.message || 'Upload fehlgeschlagen.', 'err'); }
-  finally { btn.disabled = false; btn.textContent = 'Hochladen'; }
-}
-
-async function addGalleryImage() {
-  const goatId = Number(document.getElementById('img-goat-sel').value);
-  const url = document.getElementById('gallery-url-input').value.trim();
-  if (!url) { showMsg('img-msg', 'Bitte eine Bild-URL eingeben.', 'err'); return; }
-  try {
-    await apiRequest('/api/admin/goat-images', {
-      method: 'POST',
-      headers: { 'X-Admin-Password': adminPw },
-      body: JSON.stringify({ goat_id: goatId, image_url: url, caption: '' })
-    });
-    document.getElementById('gallery-url-input').value = '';
-    showMsg('img-msg', 'Galeriebild wurde hinzugefügt.', 'ok');
-    await loadImageManager();
-    await loadCloudGoats();
-  } catch (err) { showMsg('img-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
-}
-
 async function saveMainImage() {
   const goatId = Number(document.getElementById('img-goat-sel').value);
   const url = document.getElementById('main-image-url').value.trim();
@@ -857,17 +814,140 @@ async function saveMainImage() {
   } catch (err) { showMsg('img-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
 }
 
-async function deleteGalleryImage(id) {
-  if (!confirm('Dieses Galeriebild wirklich löschen?')) return;
+/* ── Galerie ─────────────────────────────────────────── */
+let cloudGalleryPhotos = [];
+let editingGalleryPhotoId = null;
+let pendingGalleryPhotoUrl = '';
+
+function fillGalleryGoatSelects() {
+  const options = '<option value="">Keine bestimmte Ziege</option>' +
+    cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  const filterSel = document.getElementById('gal-admin-goat');
+  const formSel = document.getElementById('g-photo-goat');
+  if (filterSel) filterSel.innerHTML = '<option value="">Alle Ziegen</option>' +
+    cloudGoats.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  if (formSel) formSel.innerHTML = options;
+}
+
+async function loadGalleryAdmin() {
+  fillGalleryGoatSelects();
+  const box = document.getElementById('gal-admin-list');
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Fotos ...</p>';
   try {
-    await apiRequest(`/api/admin/goat-images/${id}`, {
-      method: 'DELETE',
-      headers: { 'X-Admin-Password': adminPw }
-    });
-    showMsg('img-msg', 'Galeriebild wurde gelöscht.', 'ok');
-    await loadImageManager();
-    await loadCloudGoats();
-  } catch (err) { showMsg('img-msg', err.message || 'Löschen fehlgeschlagen.', 'err'); }
+    cloudGalleryPhotos = await adminGetAllGalleryPhotos(adminPw);
+    renderGalleryAdminList();
+  } catch (e) { box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Fehler beim Laden.</p>'; }
+}
+
+function renderGalleryAdminList() {
+  const box = document.getElementById('gal-admin-list');
+  const goatFilter = document.getElementById('gal-admin-goat').value;
+  const list = goatFilter ? cloudGalleryPhotos.filter(p => String(p.goat_id) === goatFilter) : cloudGalleryPhotos;
+
+  if (!list.length) { box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Keine Fotos vorhanden.</p>'; return; }
+
+  box.innerHTML = list.map(p => `
+    <div style="position:relative;border:1px solid var(--clr-border);border-radius:12px;overflow:hidden;background:var(--clr-card)${p.active ? '' : ';opacity:.5'}">
+      <div style="aspect-ratio:1;background:var(--clr-bg-subtle)">
+        <img src="${escHtml(p.image_url)}" alt="${escHtml(p.caption || '')}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.opacity=0">
+      </div>
+      <div style="padding:8px;font-size:11px;color:var(--clr-text-muted)">
+        ${p.goat_name ? `🐐 ${escHtml(p.goat_name)}<br>` : ''}
+        ${p.active ? '' : '<strong>Inaktiv</strong><br>'}
+      </div>
+      <div style="display:flex;gap:4px;padding:0 8px 8px">
+        <button class="btn-secondary" style="flex:1;font-size:11px;padding:5px 6px" onclick="startEditGalleryPhoto(${p.id})">Bearbeiten</button>
+        <button class="btn-danger" style="font-size:11px;padding:5px 8px" onclick="deleteGalleryPhoto(${p.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderGalleryPhotoPreview(url) {
+  const box = document.getElementById('gal-photo-preview');
+  box.innerHTML = url
+    ? `<img src="${escHtml(url)}" alt="Vorschau" style="max-width:200px;max-height:140px;border-radius:12px;border:1px solid var(--clr-border);object-fit:cover">`
+    : '';
+}
+
+async function uploadGalleryPhotoFile() {
+  const fileInput = document.getElementById('g-photo-file');
+  const file = fileInput.files[0];
+  if (!file) { showMsg('gal-msg', 'Bitte eine Bilddatei auswählen.', 'err'); return; }
+  const btn = document.getElementById('g-photo-upload-btn');
+  btn.disabled = true; btn.textContent = 'Wird hochgeladen …';
+  try {
+    const data = await adminUploadGalleryImage(file, adminPw);
+    pendingGalleryPhotoUrl = data.image_url;
+    document.getElementById('g-photo-url').value = pendingGalleryPhotoUrl;
+    renderGalleryPhotoPreview(pendingGalleryPhotoUrl);
+    fileInput.value = '';
+    showMsg('gal-msg', 'Bild wurde hochgeladen.', 'ok');
+  } catch (err) { showMsg('gal-msg', err.message || 'Upload fehlgeschlagen.', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Hochladen'; }
+}
+
+function startEditGalleryPhoto(id) {
+  const photo = cloudGalleryPhotos.find(p => p.id === id);
+  if (!photo) return;
+  editingGalleryPhotoId = id;
+  fillGalleryGoatSelects();
+  pendingGalleryPhotoUrl = photo.image_url || '';
+  document.getElementById('g-photo-url').value = pendingGalleryPhotoUrl;
+  renderGalleryPhotoPreview(pendingGalleryPhotoUrl);
+  document.getElementById('g-photo-caption').value = photo.caption || '';
+  document.getElementById('g-photo-date').value = photo.photo_date || '';
+  document.getElementById('g-photo-goat').value = photo.goat_id || '';
+  document.getElementById('g-photo-album').value = photo.album || '';
+  document.getElementById('g-photo-save-btn').textContent = 'Änderungen speichern';
+  document.getElementById('g-photo-cancel-btn').classList.remove('hidden');
+  document.getElementById('gal-form-title').textContent = 'Foto bearbeiten';
+  document.getElementById('gal-form-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditGalleryPhoto() {
+  editingGalleryPhotoId = null;
+  pendingGalleryPhotoUrl = '';
+  ['g-photo-url','g-photo-caption','g-photo-date','g-photo-goat','g-photo-album'].forEach(id => document.getElementById(id).value = '');
+  renderGalleryPhotoPreview('');
+  document.getElementById('g-photo-save-btn').textContent = 'Foto speichern';
+  document.getElementById('g-photo-cancel-btn').classList.add('hidden');
+  document.getElementById('gal-form-title').textContent = 'Neues Foto hinzufügen';
+}
+
+async function saveGalleryPhoto() {
+  const imageUrl = document.getElementById('g-photo-url').value.trim() || pendingGalleryPhotoUrl;
+  if (!imageUrl) { showMsg('gal-msg', 'Bitte ein Bild hochladen oder eine Bild-URL angeben.', 'err'); return; }
+
+  const photo = {
+    image_url: imageUrl,
+    caption: document.getElementById('g-photo-caption').value.trim(),
+    photo_date: document.getElementById('g-photo-date').value || null,
+    goat_id: document.getElementById('g-photo-goat').value || null,
+    album: document.getElementById('g-photo-album').value.trim(),
+    active: true
+  };
+
+  try {
+    if (editingGalleryPhotoId) {
+      await adminUpdateGalleryPhoto(editingGalleryPhotoId, photo, adminPw);
+      showMsg('gal-msg', 'Foto wurde aktualisiert.', 'ok');
+    } else {
+      await adminAddGalleryPhoto(photo, adminPw);
+      showMsg('gal-msg', 'Foto wurde gespeichert.', 'ok');
+    }
+    cancelEditGalleryPhoto();
+    await loadGalleryAdmin();
+  } catch (err) { showMsg('gal-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
+}
+
+async function deleteGalleryPhoto(id) {
+  if (!confirm('Dieses Foto wirklich löschen?')) return;
+  try {
+    await adminDeleteGalleryPhoto(id, adminPw);
+    showMsg('gal-msg', 'Foto wurde gelöscht.', 'ok');
+    if (editingGalleryPhotoId === id) cancelEditGalleryPhoto();
+    await loadGalleryAdmin();
+  } catch (err) { showMsg('gal-msg', err.message || 'Löschen fehlgeschlagen.', 'err'); }
 }
 
 /* ── Quiz ────────────────────────────────────────────── */

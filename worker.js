@@ -90,20 +90,6 @@ async function isAdmin(request, env) {
   return (await getAdminHash(pw)) === storedHash || getLegacyHash(pw) === storedHash;
 }
 
-async function loadGoatPhotos(env) {
-  const { results } = await env.DB.prepare(`
-    SELECT goat_id, image_url
-    FROM goat_images
-    ORDER BY created_at ASC, id ASC
-  `).all();
-  const byGoat = new Map();
-  for (const row of results || []) {
-    if (!byGoat.has(row.goat_id)) byGoat.set(row.goat_id, []);
-    byGoat.get(row.goat_id).push(row.image_url);
-  }
-  return byGoat;
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -421,20 +407,120 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
 
       if (path === "/api/goats" && request.method === "GET") {
         const { results } = await env.DB.prepare("SELECT g.*, p.name AS mother_name FROM goats g LEFT JOIN goats p ON p.id = g.mother_id ORDER BY g.id").all();
-        const photosByGoat = await loadGoatPhotos(env);
-        return json((results || []).map(row => ({ ...row, photos: photosByGoat.get(row.id) || [] })));
+        return json(results || []);
       }
 
-      if (path === "/api/goat-images" && request.method === "GET") {
-        const goatId = Number(url.searchParams.get("goat_id"));
-        if (!goatId) return json([]);
-        const { results } = await env.DB.prepare(`
-          SELECT id, goat_id, image_url, caption, created_at
-          FROM goat_images
-          WHERE goat_id = ?
-          ORDER BY created_at ASC, id ASC
-        `).bind(goatId).all();
+      // ================= GALLERY (public) =================
+      if (path === "/api/gallery" && request.method === "GET") {
+        const goatId = url.searchParams.get("goat_id");
+        const year = (url.searchParams.get("year") || "").trim();
+
+        let sql = `
+          SELECT ph.id, ph.image_url, ph.caption, ph.photo_date, ph.goat_id, g.name AS goat_name, ph.album, ph.created_at
+          FROM gallery_photos ph
+          LEFT JOIN goats g ON g.id = ph.goat_id
+          WHERE ph.active = 1
+        `;
+        const params = [];
+        if (goatId) { sql += " AND ph.goat_id = ?"; params.push(Number(goatId)); }
+        if (year && /^\d{4}$/.test(year)) { sql += " AND strftime('%Y', COALESCE(ph.photo_date, ph.created_at)) = ?"; params.push(year); }
+        sql += " ORDER BY COALESCE(ph.photo_date, ph.created_at) DESC, ph.id DESC";
+
+        const { results } = await env.DB.prepare(sql).bind(...params).all();
         return json(results || []);
+      }
+
+      // ================= GALLERY (admin) =================
+      if (path === "/api/admin/gallery" && request.method === "GET") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const { results } = await env.DB.prepare(`
+          SELECT ph.*, g.name AS goat_name
+          FROM gallery_photos ph
+          LEFT JOIN goats g ON g.id = ph.goat_id
+          ORDER BY ph.created_at DESC
+        `).all();
+        return json(results || []);
+      }
+
+      if (path === "/api/admin/gallery" && request.method === "POST") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const body = await request.json();
+        const imageUrl = String(body.image_url || "").trim();
+        if (!imageUrl) return json({ error: "Bild-URL wird benötigt." }, 400);
+
+        const result = await env.DB.prepare(`
+          INSERT INTO gallery_photos (image_url, caption, photo_date, goat_id, album, active)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          imageUrl,
+          String(body.caption || "").trim(),
+          body.photo_date ? String(body.photo_date).trim() : null,
+          body.goat_id ? Number(body.goat_id) : null,
+          String(body.album || "").trim(),
+          body.active === false ? 0 : 1
+        ).run();
+
+        return json({ ok: true, id: result.meta?.last_row_id || null });
+      }
+
+      const galleryAdminMatch = path.match(/^\/api\/admin\/gallery\/(\d+)$/);
+
+      if (galleryAdminMatch && request.method === "PUT") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const id = Number(galleryAdminMatch[1]);
+        const body = await request.json();
+
+        const existing = await env.DB.prepare("SELECT id FROM gallery_photos WHERE id = ? LIMIT 1").bind(id).first();
+        if (!existing) return json({ error: "Foto nicht gefunden." }, 404);
+
+        await env.DB.prepare(`
+          UPDATE gallery_photos
+          SET caption = ?, photo_date = ?, goat_id = ?, album = ?, active = ?
+          WHERE id = ?
+        `).bind(
+          String(body.caption || "").trim(),
+          body.photo_date ? String(body.photo_date).trim() : null,
+          body.goat_id ? Number(body.goat_id) : null,
+          String(body.album || "").trim(),
+          body.active === false ? 0 : 1,
+          id
+        ).run();
+
+        return json({ ok: true, id });
+      }
+
+      if (galleryAdminMatch && request.method === "DELETE") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const id = Number(galleryAdminMatch[1]);
+        await env.DB.prepare("DELETE FROM gallery_photos WHERE id = ?").bind(id).run();
+        return json({ ok: true });
+      }
+
+      if (path === "/api/admin/upload-gallery-image" && request.method === "POST") {
+        if (!(await isAdmin(request, env))) return json({ error: "Forbidden" }, 403);
+
+        const formData = await request.formData();
+        const file = formData.get("file");
+        if (!file || typeof file === "string") return json({ error: "Keine Datei empfangen." }, 400);
+
+        const MAX_BYTES = 8 * 1024 * 1024;
+        if (typeof file.size === "number" && file.size > MAX_BYTES) {
+          return json({ error: "Datei ist zu groß (max. 8 MB)." }, 400);
+        }
+
+        const ext = file.name && file.name.includes(".")
+          ? file.name.split(".").pop().toLowerCase()
+          : "jpg";
+        const ALLOWED_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+        if (!ALLOWED_TYPES[ext]) return json({ error: "Nur jpg, jpeg, png oder webp erlaubt." }, 400);
+
+        const key = `gallery/${Date.now()}.${ext}`;
+        await env.ZIEGEN_BILDER.put(key, file.stream(), {
+          httpMetadata: { contentType: ALLOWED_TYPES[ext] }
+        });
+
+        const publicUrl = `https://pub-78b8df31088d4faba7413d07037dbd2e.r2.dev/${key}`;
+        return json({ ok: true, image_url: publicUrl });
       }
 
       // ================= BLOG (public) =================
@@ -763,18 +849,6 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
           return json({ error: "Nur jpg, jpeg, png oder webp erlaubt." }, 400);
         }
 
-        const skipGallery = formData.get("skip_gallery") === "true";
-
-        // Server-side gallery slot limit (max 5 per goat)
-        if (!skipGallery) {
-          const { results: existingImgs } = await env.DB.prepare(
-            "SELECT id FROM goat_images WHERE goat_id = ?"
-          ).bind(goatIdInt).all();
-          if ((existingImgs || []).length >= 5) {
-            return json({ error: "Maximal 5 Galeriebilder pro Ziege erlaubt." }, 400);
-          }
-        }
-
         // Use server-determined content-type, never trust client-supplied value
         const key = `goats/${goatIdInt}/${Date.now()}.${ext}`;
         await env.ZIEGEN_BILDER.put(key, file.stream(), {
@@ -782,13 +856,6 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
         });
 
         const publicUrl = `https://pub-78b8df31088d4faba7413d07037dbd2e.r2.dev/${key}`;
-
-        if (!skipGallery) {
-          await env.DB.prepare(`
-            INSERT INTO goat_images (goat_id, image_url, caption)
-            VALUES (?, ?, ?)
-          `).bind(goatIdInt, publicUrl, caption).run();
-        }
 
         return json({
           ok: true,
@@ -849,37 +916,6 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
         await env.DB.prepare("DELETE FROM goats WHERE id = ?").bind(id).run();
         await env.DB.prepare("DELETE FROM votes WHERE goat_id = ?").bind(id).run();
         await env.DB.prepare("DELETE FROM goat_images WHERE goat_id = ?").bind(id).run();
-        return json({ ok: true });
-      }
-
-      if (path === "/api/admin/goat-images" && request.method === "POST") {
-        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
-        const body = await request.json();
-        const goatId = Number(body.goat_id);
-        const imageUrl = String(body.image_url || "").trim();
-        const caption = String(body.caption || "").trim();
-        if (!goatId || !imageUrl) return json({ error: "Ziege und Bild-URL werden benötigt." }, 400);
-
-        // Enforce max 5 gallery images per goat
-        const { results: existingImgs } = await env.DB.prepare(
-          "SELECT id FROM goat_images WHERE goat_id = ?"
-        ).bind(goatId).all();
-        if ((existingImgs || []).length >= 5) {
-          return json({ error: "Maximal 5 Galeriebilder pro Ziege erlaubt." }, 400);
-        }
-
-        const result = await env.DB.prepare(`
-          INSERT INTO goat_images (goat_id, image_url, caption)
-          VALUES (?, ?, ?)
-        `).bind(goatId, imageUrl, caption).run();
-        return json({ ok: true, id: result.meta?.last_row_id || null });
-      }
-
-      const goatImageAdminMatch = path.match(/^\/api\/admin\/goat-images\/(\d+)$/);
-      if (goatImageAdminMatch && request.method === "DELETE") {
-        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
-        const id = Number(goatImageAdminMatch[1]);
-        await env.DB.prepare("DELETE FROM goat_images WHERE id = ?").bind(id).run();
         return json({ ok: true });
       }
 

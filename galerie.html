@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Galerie</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+
+  <div class="page-title">📸 Galerie</div>
+  <p class="section-sub">Schnappschüsse aus dem Alltag unserer Ohmoor-Ziegen.</p>
+
+  <div class="blog-filter-bar">
+    <select id="gal-goat" class="form-input" style="width:auto" onchange="onGalleryFilterChange()">
+      <option value="">Alle Ziegen</option>
+    </select>
+    <select id="gal-year" class="form-input" style="width:auto" onchange="onGalleryFilterChange()">
+      <option value="">Alle Jahre</option>
+    </select>
+  </div>
+
+  <div class="gallery-meta" id="gal-meta"></div>
+  <div class="gallery-masonry" id="gal-masonry"></div>
+  <div class="empty-state hidden" id="gal-empty">
+    <span class="empty-state-icon">📸</span>
+    <div class="empty-state-text">Keine Fotos gefunden</div>
+  </div>
+
+</main>
+
+<!-- Lightbox -->
+<div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-label="Foto-Ansicht">
+  <button class="lightbox-close" id="lb-close" aria-label="Schließen">✕</button>
+  <button class="lightbox-nav l" id="lb-prev" aria-label="Vorheriges Foto">‹</button>
+  <button class="lightbox-nav r" id="lb-next" aria-label="Nächstes Foto">›</button>
+  <div class="lightbox-img-wrap">
+    <img id="lb-img" src="" alt="">
+    <div>
+      <div class="lightbox-caption" id="lb-caption"></div>
+      <div class="lightbox-meta" id="lb-meta"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('galerie');
+
+let allPhotos = [];
+let lbIndex = -1;
+
+async function initPage() {
+  const box = document.getElementById('gal-masonry');
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Fotos …</p>';
+  try {
+    allPhotos = await fetchGalleryPhotos();
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = '';
+    document.getElementById('gal-empty').classList.remove('hidden');
+    document.getElementById('gal-empty').querySelector('.empty-state-text').textContent = 'Fotos konnten nicht geladen werden.';
+    return;
+  }
+  fillGoatOptions();
+  fillYearOptions();
+
+  const preselectGoat = new URLSearchParams(location.search).get('goat');
+  if (preselectGoat) document.getElementById('gal-goat').value = preselectGoat;
+
+  render();
+}
+
+function fillGoatOptions() {
+  const sel = document.getElementById('gal-goat');
+  const goats = [...new Map(allPhotos.filter(p => p.goat_id).map(p => [p.goat_id, p.goat_name])).entries()]
+    .sort((a, b) => (a[1] || '').localeCompare(b[1] || '', 'de'));
+  sel.innerHTML = '<option value="">Alle Ziegen</option>' +
+    goats.map(([id, name]) => `<option value="${id}">${escHtml(name || '?')}</option>`).join('');
+}
+
+function fillYearOptions() {
+  const sel = document.getElementById('gal-year');
+  const years = [...new Set(allPhotos.map(p => String(p.photo_date || p.created_at || '').slice(0, 4)).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a));
+  sel.innerHTML = '<option value="">Alle Jahre</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('');
+}
+
+function onGalleryFilterChange() { render(); }
+
+function currentFiltered() {
+  const goatId = document.getElementById('gal-goat').value;
+  const year = document.getElementById('gal-year').value;
+  return allPhotos.filter(p => {
+    if (goatId && String(p.goat_id) !== goatId) return false;
+    if (year && String(p.photo_date || p.created_at || '').slice(0, 4) !== year) return false;
+    return true;
+  });
+}
+
+function render() {
+  const filtered = currentFiltered();
+  const box = document.getElementById('gal-masonry');
+  const empty = document.getElementById('gal-empty');
+  const meta = document.getElementById('gal-meta');
+
+  if (!filtered.length) {
+    box.innerHTML = '';
+    empty.classList.remove('hidden');
+    empty.querySelector('.empty-state-text').textContent = 'Keine Fotos gefunden';
+    meta.textContent = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  meta.textContent = filtered.length === allPhotos.length
+    ? `${allPhotos.length} Fotos`
+    : `${filtered.length} von ${allPhotos.length} Fotos`;
+
+  box.innerHTML = filtered.map((p, i) => `
+    <div class="gallery-masonry-item" onclick="openLightbox(${i})">
+      <img src="${escHtml(p.image_url)}" alt="${escHtml(p.caption || p.goat_name || 'Foto')}" loading="lazy">
+    </div>`).join('');
+
+  window._galFiltered = filtered;
+}
+
+function openLightbox(i) {
+  lbIndex = i;
+  showLightboxPhoto();
+  document.getElementById('lightbox').classList.add('open');
+  document.getElementById('lb-close').focus();
+  document.addEventListener('keydown', onLightboxKey);
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.removeEventListener('keydown', onLightboxKey);
+}
+
+function onLightboxKey(e) {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+}
+
+function lbNav(dir) {
+  const list = window._galFiltered || [];
+  const next = lbIndex + dir;
+  if (next < 0 || next >= list.length) return;
+  lbIndex = next;
+  showLightboxPhoto();
+}
+
+function showLightboxPhoto() {
+  const list = window._galFiltered || [];
+  const p = list[lbIndex];
+  if (!p) return;
+  document.getElementById('lb-img').src = p.image_url;
+  document.getElementById('lb-img').alt = p.caption || p.goat_name || 'Foto';
+  document.getElementById('lb-caption').textContent = p.caption || '';
+  const metaParts = [];
+  if (p.goat_name) metaParts.push(`🐐 ${p.goat_name}`);
+  const dateLabel = galleryDateLabel(p);
+  if (dateLabel) metaParts.push(dateLabel);
+  document.getElementById('lb-meta').textContent = metaParts.join(' · ');
+  document.getElementById('lb-prev').disabled = lbIndex <= 0;
+  document.getElementById('lb-next').disabled = lbIndex >= list.length - 1;
+}
+
+document.getElementById('lb-close').addEventListener('click', closeLightbox);
+document.getElementById('lb-prev').addEventListener('click', () => lbNav(-1));
+document.getElementById('lb-next').addEventListener('click', () => lbNav(1));
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if (e.target.id === 'lightbox') closeLightbox();
+});
+
+// Wischen (Touch) für Mobilgeräte
+let touchStartX = null;
+document.getElementById('lightbox').addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].clientX; });
+document.getElementById('lightbox').addEventListener('touchend', (e) => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) lbNav(dx > 0 ? -1 : 1);
+  touchStartX = null;
+});
+
+initPage();
+</script>
+</body>
+</html>
