@@ -22,6 +22,7 @@ function buildNav(activePage) {
     { id:'memory',    href:'/OhmoorZiegen/memory.html',      icon:'🃏', label:'Memory'    },
     { id:'rangliste', href:'/OhmoorZiegen/rangliste.html',   icon:'🏆', label:'Rangliste' },
     { id:'fakten',    href:'/OhmoorZiegen/fakten.html',      icon:'💡', label:'Fakten'    },
+    { id:'ueber-uns', href:'/OhmoorZiegen/ueber-uns.html',   icon:'🧑‍🌾', label:'Über uns'  },
     { id:'feedback',  href:'/OhmoorZiegen/feedback.html',    icon:'💬', label:'Feedback'  },
   ];
 
@@ -109,6 +110,8 @@ function buildNav(activePage) {
   if (!document.getElementById('app-footer')) {
     document.body.insertAdjacentHTML('beforeend', `
       <footer id="app-footer" style="margin-top:40px;padding:24px 20px 32px;text-align:center;font-size:13px;color:var(--clr-text-muted);border-top:1px solid rgba(0,0,0,0.08);opacity:0.9">
+        <a href="/OhmoorZiegen/ueber-uns.html" style="color:inherit;text-decoration:none">Über uns</a>
+        <span style="margin:0 8px">·</span>
         <a href="/OhmoorZiegen/datenschutz.html" style="color:inherit;text-decoration:none">Datenschutz</a>
       </footer>
     `);

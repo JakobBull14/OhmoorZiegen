@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Über uns</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+
+  <div class="page-title">🧑‍🌾 Über uns</div>
+  <p class="section-sub">Wer hinter den Ohmoor-Ziegen steht und warum es sie an unserer Schule gibt.</p>
+
+  <div id="about-hero"></div>
+
+  <div class="about-sections">
+    <section class="about-section">
+      <h2>🐐 Die Ohmoor-Ziegen</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+
+    <section class="about-section">
+      <h2>🏫 Warum gibt es Ziegen an der Schule?</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+
+    <section class="about-section">
+      <h2>🎓 Was lernen Schülerinnen und Schüler durch die Tiere?</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+
+    <section class="about-section">
+      <h2>👥 Wer kümmert sich um die Ziegen?</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+
+    <section class="about-section">
+      <h2>📋 Schulalltag, Verantwortung &amp; Tierwohl</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+
+    <section class="about-section">
+      <h2>📜 Geschichte des Ziegenprojekts</h2>
+      <div class="about-placeholder">Text folgt – wird von der Schule ergänzt.</div>
+    </section>
+  </div>
+
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('ueber-uns');
+
+async function loadAboutHero() {
+  const box = document.getElementById('about-hero');
+  try {
+    const photos = await fetchGalleryPhotos();
+    if (!photos.length) return;
+    const photo = photos[Math.floor(Math.random() * photos.length)];
+    box.innerHTML = `
+      <div class="about-hero-photo">
+        <img src="${escHtml(photo.image_url)}" alt="${escHtml(photo.caption || 'Die Ohmoor-Ziegen')}">
+      </div>`;
+  } catch (e) { console.warn('Titelbild konnte nicht geladen werden.', e); }
+}
+
+loadAboutHero();
+</script>
+</body>
+</html>
