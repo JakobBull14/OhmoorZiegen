@@ -523,3 +523,74 @@ async function adminDeleteGoatImage(imageId, adminPassword) {
     headers: { 'X-Admin-Password': adminPassword }
   });
 }
+
+// ══════════════════════════════════════════
+// BLOG
+// ══════════════════════════════════════════
+async function fetchBlogPosts(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.category) qs.set('category', params.category);
+  if (params.year) qs.set('year', params.year);
+  if (params.q) qs.set('q', params.q);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  const res = await fetch(`${API_BASE}/api/blog${suffix}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Blog API ${res.status}`);
+  return await res.json();
+}
+
+async function fetchBlogPost(id) {
+  const res = await fetch(`${API_BASE}/api/blog/${id}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(res.status === 404 ? 'Beitrag nicht gefunden.' : `Blog API ${res.status}`);
+  return await res.json();
+}
+
+async function adminGetAllBlogPosts(adminPassword) {
+  return await apiRequest('/api/admin/blog', {
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminAddBlogPost(post, adminPassword) {
+  return await apiRequest('/api/admin/blog', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(post)
+  });
+}
+
+async function adminUpdateBlogPost(id, post, adminPassword) {
+  return await apiRequest(`/api/admin/blog/${id}`, {
+    method: 'PUT',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(post)
+  });
+}
+
+async function adminDeleteBlogPost(id, adminPassword) {
+  return await apiRequest(`/api/admin/blog/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': adminPassword }
+  });
+}
+
+async function adminUploadBlogImage(file, adminPassword) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${API_BASE}/api/admin/upload-blog-image`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': adminPassword },
+    body: fd
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen.');
+  return data;
+}
+
+function blogDateLabel(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return String(value);
+  }
+}

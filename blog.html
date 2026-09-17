@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Blog</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+
+  <div class="page-title">📰 Blog</div>
+  <p class="section-sub">Neues von den Ohmoor-Ziegen und aus dem Schulalltag.</p>
+
+  <!-- Filter -->
+  <div class="blog-filter-bar">
+    <div style="position:relative;flex:1;min-width:180px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:16px;pointer-events:none">🔍</span>
+      <input type="text" id="blog-search"
+             style="width:100%;padding:10px 14px 10px 38px;border:1px solid var(--clr-border);border-radius:var(--radius-full);background:var(--clr-card);color:var(--clr-text);font-family:var(--font-body);font-size:14px;outline:none;box-sizing:border-box"
+             placeholder="Beitrag suchen …" oninput="onFilterChange()" autocomplete="off">
+    </div>
+    <select id="blog-category" class="form-input" style="width:auto" onchange="onFilterChange()">
+      <option value="">Alle Kategorien</option>
+    </select>
+    <select id="blog-year" class="form-input" style="width:auto" onchange="onFilterChange()">
+      <option value="">Alle Jahre</option>
+    </select>
+  </div>
+
+  <div class="gallery-meta" id="blog-meta"></div>
+  <div class="gallery-grid" id="blog-grid"></div>
+  <div class="empty-state hidden" id="blog-empty">
+    <span class="empty-state-icon">📰</span>
+    <div class="empty-state-text">Keine Beiträge gefunden</div>
+  </div>
+
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('blog');
+
+let allPosts = [];
+
+async function initPage() {
+  const grid = document.getElementById('blog-grid');
+  grid.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Beiträge …</p>';
+  try {
+    allPosts = await fetchBlogPosts();
+  } catch (e) {
+    console.error(e);
+    grid.innerHTML = '';
+    document.getElementById('blog-empty').classList.remove('hidden');
+    document.getElementById('blog-empty').querySelector('.empty-state-text').textContent = 'Beiträge konnten nicht geladen werden.';
+    return;
+  }
+  fillCategoryOptions();
+  fillYearOptions();
+  render();
+}
+
+function fillCategoryOptions() {
+  const sel = document.getElementById('blog-category');
+  const cats = [...new Set(allPosts.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+  sel.innerHTML = '<option value="">Alle Kategorien</option>' +
+    cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+}
+
+function fillYearOptions() {
+  const sel = document.getElementById('blog-year');
+  const years = [...new Set(allPosts.filter(p => p.published_at).map(p => String(p.published_at).slice(0, 4)))]
+    .sort((a, b) => b.localeCompare(a));
+  sel.innerHTML = '<option value="">Alle Jahre</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('');
+}
+
+function onFilterChange() {
+  render();
+}
+
+function render() {
+  const q = document.getElementById('blog-search').value.trim().toLowerCase();
+  const cat = document.getElementById('blog-category').value;
+  const year = document.getElementById('blog-year').value;
+
+  const filtered = allPosts.filter(p => {
+    if (cat && p.category !== cat) return false;
+    if (year && String(p.published_at || '').slice(0, 4) !== year) return false;
+    if (q) {
+      const hay = `${p.title || ''} ${p.excerpt || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const grid = document.getElementById('blog-grid');
+  const empty = document.getElementById('blog-empty');
+  const meta = document.getElementById('blog-meta');
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    empty.querySelector('.empty-state-text').textContent = 'Keine Beiträge gefunden';
+    meta.textContent = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  meta.textContent = filtered.length === allPosts.length
+    ? `${allPosts.length} Beiträge`
+    : `${filtered.length} von ${allPosts.length} Beiträgen`;
+
+  grid.innerHTML = filtered.map(p => `
+    <a class="goat-card" href="/OhmoorZiegen/beitrag.html?id=${p.id}" style="text-decoration:none">
+      <div class="goat-card-image" style="aspect-ratio:16/10">
+        ${p.cover_image_url
+          ? `<img src="${escHtml(p.cover_image_url)}" alt="${escHtml(p.title)}" loading="lazy">`
+          : `<span style="font-size:3rem">📰</span>`}
+        ${p.category ? `<div class="gc-badge">${escHtml(p.category)}</div>` : ''}
+      </div>
+      <div class="goat-card-body">
+        <div class="goat-card-name">${escHtml(p.title)}</div>
+        <div class="goat-card-nick">${escHtml(blogDateLabel(p.published_at))}</div>
+        <div style="font-size:13px;color:var(--clr-text-muted);line-height:1.5;margin-bottom:10px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${escHtml(p.excerpt || '')}</div>
+        <span style="font-size:13px;color:var(--clr-blue);font-weight:600">Weiterlesen →</span>
+      </div>
+    </a>`).join('');
+}
+
+initPage();
+</script>
+</body>
+</html>

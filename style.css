@@ -529,6 +529,31 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 /* ════════════════════════════════════════
    GALERIE
    ════════════════════════════════════════ */
+.blog-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.blog-filter-bar select.form-input {
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .blog-filter-bar { flex-direction: column; }
+  .blog-filter-bar select.form-input { width: 100% !important; }
+}
+
+.blog-post-content {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--clr-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .gallery-meta {
   font-size: 13px;
   color: var(--clr-text-muted);

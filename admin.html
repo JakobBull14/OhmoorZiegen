@@ -353,6 +353,53 @@
         </div>
 
         <div class="admin-section closed">
+          <div class="admin-section-title" onclick="toggleAccordion(this)">📰 Blog verwalten</div>
+          <div class="accordion-body">
+            <div style="margin:14px 0 16px">
+              <button class="btn-primary" onclick="loadBlogAdmin()">Beiträge neu laden</button>
+            </div>
+            <div id="blog-list"></div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+              <div id="blog-form-title" style="font-weight:700;margin-bottom:10px">Neuen Beitrag anlegen</div>
+              <div class="form-grid">
+                <div class="f-group"><label>Titel *</label><input id="b-title" placeholder="z.B. Frühling im Ziegengehege"></div>
+                <div class="f-group"><label>Kategorie</label><input id="b-category" placeholder="z.B. Neues von den Ziegen"></div>
+              </div>
+              <div class="f-group" style="margin-top:12px"><label>Tags (mit Komma getrennt)</label><input id="b-tags" placeholder="z.B. Frühling, Nachwuchs"></div>
+
+              <div class="f-group" style="margin-top:12px">
+                <label>Titelbild</label>
+                <div id="blog-cover-preview" style="margin-bottom:8px"></div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="b-cover-file" accept="image/jpeg,image/png,image/webp"
+                         class="form-input" style="flex:1;min-width:0;padding:6px 10px;font-size:13px">
+                  <button class="btn-primary" id="b-cover-upload-btn" onclick="uploadBlogCover()"
+                          style="white-space:nowrap;padding:8px 14px;font-size:13px">Hochladen</button>
+                </div>
+                <input id="b-cover-url" class="form-input" style="margin-top:8px;font-size:13px" placeholder="oder Bild-URL direkt eingeben">
+              </div>
+
+              <div class="f-group" style="margin-top:12px"><label>Kurzbeschreibung (optional, sonst automatisch)</label><textarea id="b-excerpt" placeholder="Wird sonst automatisch aus dem Text erzeugt"></textarea></div>
+              <div class="f-group" style="margin-top:12px"><label>Text *</label><textarea id="b-content" style="min-height:160px" placeholder="Der Beitragstext"></textarea></div>
+
+              <div class="f-group" style="margin-top:12px">
+                <label>Status</label>
+                <select id="b-status">
+                  <option value="draft">Entwurf</option>
+                  <option value="published">Veröffentlicht</option>
+                </select>
+              </div>
+
+              <div class="btn-row">
+                <button class="btn-primary" id="b-save-btn" onclick="saveBlogPost()">Beitrag speichern</button>
+                <button class="btn-danger hidden" id="b-cancel-btn" onclick="cancelEditBlogPost()">Abbrechen</button>
+              </div>
+              <div id="blog-msg"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section closed">
           <div class="admin-section-title" onclick="toggleAccordion(this)">💡 Fakten verwalten</div>
           <div class="accordion-body">
             <div style="margin:14px 0 16px">
@@ -546,6 +593,7 @@ async function showAdmin() {
   document.getElementById('admin-screen').classList.remove('hidden');
   await loadCloudGoats();
   await loadQuizAdmin();
+  await loadBlogAdmin();
   await loadFactsAdmin();
   await loadFeedbackAdmin();
   buildNav('admin');
@@ -945,6 +993,140 @@ async function addFact() {
     }
     await loadFactsAdmin();
   } catch (err) { showMsg('facts-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
+}
+
+/* ── Blog ────────────────────────────────────────────── */
+let cloudBlogPosts = [];
+let editingBlogId = null;
+let pendingBlogCoverUrl = '';
+
+async function loadBlogAdmin() {
+  const box = document.getElementById('blog-list');
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Lade Beiträge ...</p>';
+  try {
+    cloudBlogPosts = await adminGetAllBlogPosts(adminPw);
+    renderBlogList();
+  } catch (e) { box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Fehler beim Laden.</p>'; }
+}
+
+function renderBlogList() {
+  const box = document.getElementById('blog-list');
+  if (!cloudBlogPosts.length) { box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Noch keine Beiträge vorhanden.</p>'; return; }
+  box.innerHTML = cloudBlogPosts.map(p => `
+    <div style="padding:12px;border:1px solid var(--clr-border);border-radius:12px;margin-bottom:10px;background:var(--clr-card)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">${escHtml(p.title)}</div>
+          <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">
+            ${p.category ? escHtml(p.category) + ' · ' : ''}${p.published_at ? escHtml(blogDateLabel(p.published_at)) : 'Noch nicht veröffentlicht'}
+          </div>
+        </div>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${p.status === 'published' ? 'background:var(--clr-green-light);color:var(--clr-green)' : 'background:var(--clr-bg-subtle);color:var(--clr-text-muted)'}">
+          ${p.status === 'published' ? 'Veröffentlicht' : 'Entwurf'}
+        </span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-primary" style="font-size:13px;padding:6px 14px" onclick="startEditBlogPost(${p.id})">Bearbeiten</button>
+        <button class="btn-danger"  style="font-size:13px;padding:6px 14px" onclick="deleteBlogPost(${p.id})">Löschen</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderBlogCoverPreview(url) {
+  const box = document.getElementById('blog-cover-preview');
+  if (!url) { box.innerHTML = ''; return; }
+  box.innerHTML = `<img src="${escHtml(url)}" alt="Vorschau"
+    style="max-width:220px;max-height:140px;border-radius:12px;border:1px solid var(--clr-border);object-fit:cover">`;
+}
+
+function startEditBlogPost(id) {
+  const post = cloudBlogPosts.find(p => p.id === id);
+  if (!post) return;
+  editingBlogId = id;
+  document.getElementById('b-title').value = post.title || '';
+  document.getElementById('b-category').value = post.category || '';
+  document.getElementById('b-tags').value = post.tags || '';
+  document.getElementById('b-excerpt').value = post.excerpt || '';
+  document.getElementById('b-content').value = post.content || '';
+  document.getElementById('b-status').value = post.status || 'draft';
+  pendingBlogCoverUrl = post.cover_image_url || '';
+  document.getElementById('b-cover-url').value = pendingBlogCoverUrl;
+  renderBlogCoverPreview(pendingBlogCoverUrl);
+  document.getElementById('b-save-btn').textContent = 'Änderungen speichern';
+  document.getElementById('b-cancel-btn').classList.remove('hidden');
+  document.getElementById('blog-form-title').textContent = 'Beitrag bearbeiten';
+  const sec = document.getElementById('b-title').closest('.admin-section');
+  if (sec) sec.classList.remove('closed');
+  document.getElementById('b-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditBlogPost() {
+  editingBlogId = null;
+  pendingBlogCoverUrl = '';
+  ['b-title','b-category','b-tags','b-excerpt','b-content','b-cover-url'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('b-status').value = 'draft';
+  renderBlogCoverPreview('');
+  document.getElementById('b-save-btn').textContent = 'Beitrag speichern';
+  document.getElementById('b-cancel-btn').classList.add('hidden');
+  document.getElementById('blog-form-title').textContent = 'Neuen Beitrag anlegen';
+}
+
+async function uploadBlogCover() {
+  const fileInput = document.getElementById('b-cover-file');
+  const file = fileInput.files[0];
+  if (!file) { showMsg('blog-msg', 'Bitte eine Bilddatei auswählen.', 'err'); return; }
+  const btn = document.getElementById('b-cover-upload-btn');
+  btn.disabled = true; btn.textContent = 'Wird hochgeladen …';
+  try {
+    const data = await adminUploadBlogImage(file, adminPw);
+    pendingBlogCoverUrl = data.image_url;
+    document.getElementById('b-cover-url').value = pendingBlogCoverUrl;
+    renderBlogCoverPreview(pendingBlogCoverUrl);
+    fileInput.value = '';
+    showMsg('blog-msg', 'Titelbild wurde hochgeladen.', 'ok');
+  } catch (err) { showMsg('blog-msg', err.message || 'Upload fehlgeschlagen.', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Hochladen'; }
+}
+
+async function saveBlogPost() {
+  const title = document.getElementById('b-title').value.trim();
+  const content = document.getElementById('b-content').value.trim();
+  if (!title || !content) { showMsg('blog-msg', 'Titel und Text werden benötigt.', 'err'); return; }
+
+  const coverUrl = document.getElementById('b-cover-url').value.trim() || pendingBlogCoverUrl;
+  const post = {
+    title,
+    category: document.getElementById('b-category').value.trim(),
+    tags: document.getElementById('b-tags').value.trim(),
+    excerpt: document.getElementById('b-excerpt').value.trim(),
+    content,
+    cover_image_url: coverUrl,
+    status: document.getElementById('b-status').value
+  };
+
+  try {
+    if (editingBlogId) {
+      await adminUpdateBlogPost(editingBlogId, post, adminPw);
+      showMsg('blog-msg', 'Beitrag wurde aktualisiert.', 'ok');
+    } else {
+      await adminAddBlogPost(post, adminPw);
+      showMsg('blog-msg', 'Beitrag wurde gespeichert.', 'ok');
+    }
+    cancelEditBlogPost();
+    await loadBlogAdmin();
+  } catch (err) { showMsg('blog-msg', err.message || 'Speichern fehlgeschlagen.', 'err'); }
+}
+
+async function deleteBlogPost(id) {
+  const post = cloudBlogPosts.find(p => p.id === id);
+  if (!post) return;
+  if (!confirm(`Beitrag "${post.title}" wirklich löschen?`)) return;
+  try {
+    await adminDeleteBlogPost(id, adminPw);
+    showMsg('blog-msg', 'Beitrag wurde gelöscht.', 'ok');
+    if (editingBlogId === id) cancelEditBlogPost();
+    await loadBlogAdmin();
+  } catch (err) { showMsg('blog-msg', err.message || 'Löschen fehlgeschlagen.', 'err'); }
 }
 
 /* ── Feedback ────────────────────────────────────────── */

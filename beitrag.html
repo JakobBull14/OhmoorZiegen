@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Blog</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+  <a class="detail-back" href="/OhmoorZiegen/blog.html">← Zurück zum Blog</a>
+  <div id="page-body"></div>
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('blog');
+
+const params = new URLSearchParams(location.search);
+const postId = parseInt(params.get('id'));
+
+async function initPage() {
+  const body = document.getElementById('page-body');
+
+  if (!postId) {
+    body.innerHTML = notFoundHtml();
+    return;
+  }
+
+  try {
+    const post = await fetchBlogPost(postId);
+    document.title = `Schulziegen – ${post.title}`;
+    renderPost(post);
+  } catch (e) {
+    body.innerHTML = notFoundHtml();
+  }
+}
+
+function notFoundHtml() {
+  return `
+    <div class="empty-state">
+      <span class="empty-state-icon">🤷</span>
+      <div class="empty-state-text">Beitrag nicht gefunden</div>
+      <a href="/OhmoorZiegen/blog.html" class="btn-primary" style="margin-top:16px;display:inline-flex">Zum Blog</a>
+    </div>`;
+}
+
+function renderPost(post) {
+  const coverHtml = post.cover_image_url
+    ? `<div class="detail-photo"><img src="${escHtml(post.cover_image_url)}" alt="${escHtml(post.title)}"></div>`
+    : '';
+
+  const tags = String(post.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+
+  document.getElementById('page-body').innerHTML = `
+    <div class="detail-card" style="max-width:760px">
+      ${coverHtml}
+      <div class="detail-body">
+        ${post.category ? `<span class="chip chip-blue" style="margin-bottom:10px;display:inline-block">${escHtml(post.category)}</span>` : ''}
+        <div class="detail-name">${escHtml(post.title)}</div>
+        <div class="detail-nick">${escHtml(blogDateLabel(post.published_at))}</div>
+        <div class="blog-post-content">${escHtml(post.content)}</div>
+        ${tags.length ? `
+          <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:6px">
+            ${tags.map(t => `<span class="chip">#${escHtml(t)}</span>`).join('')}
+          </div>` : ''}
+      </div>
+    </div>`;
+}
+
+initPage();
+</script>
+</body>
+</html>

@@ -38,6 +38,14 @@ function validatePlayerName(name) {
   return { ok: true, name: cleaned };
 }
 
+function deriveExcerpt(content) {
+  const flat = String(content || "").replace(/\s+/g, " ").trim();
+  if (flat.length <= 160) return flat;
+  const cut = flat.slice(0, 160);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 100 ? cut.slice(0, lastSpace) : cut) + "…";
+}
+
 function formatDateLabel(value) {
   if (!value) return "";
   try {
@@ -427,6 +435,146 @@ if (feedbackAdminMatch && request.method === 'DELETE') {
           ORDER BY created_at ASC, id ASC
         `).bind(goatId).all();
         return json(results || []);
+      }
+
+      // ================= BLOG (public) =================
+      if (path === "/api/blog" && request.method === "GET") {
+        const category = (url.searchParams.get("category") || "").trim();
+        const year = (url.searchParams.get("year") || "").trim();
+        const q = (url.searchParams.get("q") || "").trim();
+
+        let sql = `
+          SELECT id, title, excerpt, category, tags, cover_image_url, published_at
+          FROM blog_posts
+          WHERE status = 'published'
+        `;
+        const params = [];
+        if (category) { sql += " AND category = ?"; params.push(category); }
+        if (year && /^\d{4}$/.test(year)) { sql += " AND strftime('%Y', published_at) = ?"; params.push(year); }
+        if (q) { sql += " AND (title LIKE ? OR content LIKE ?)"; params.push(`%${q}%`, `%${q}%`); }
+        sql += " ORDER BY published_at DESC";
+
+        const { results } = await env.DB.prepare(sql).bind(...params).all();
+        return json(results || []);
+      }
+
+      const blogPublicMatch = path.match(/^\/api\/blog\/(\d+)$/);
+      if (blogPublicMatch && request.method === "GET") {
+        const id = Number(blogPublicMatch[1]);
+        const row = await env.DB.prepare(
+          "SELECT * FROM blog_posts WHERE id = ? AND status = 'published' LIMIT 1"
+        ).bind(id).first();
+        if (!row) return json({ error: "Beitrag nicht gefunden." }, 404);
+        return json(row);
+      }
+
+      // ================= BLOG (admin) =================
+      if (path === "/api/admin/blog" && request.method === "GET") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const { results } = await env.DB.prepare(
+          "SELECT * FROM blog_posts ORDER BY created_at DESC"
+        ).all();
+        return json(results || []);
+      }
+
+      if (path === "/api/admin/blog" && request.method === "POST") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const body = await request.json();
+        const title = String(body.title || "").trim();
+        const content = String(body.content || "").trim();
+        if (!title || !content) return json({ error: "Titel und Text werden benötigt." }, 400);
+
+        const status = body.status === "published" ? "published" : "draft";
+        const publishedAt = status === "published" ? new Date().toISOString() : null;
+
+        const result = await env.DB.prepare(`
+          INSERT INTO blog_posts (title, excerpt, content, category, tags, cover_image_url, status, published_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          title,
+          String(body.excerpt || "").trim() || deriveExcerpt(content),
+          content,
+          String(body.category || "").trim(),
+          String(body.tags || "").trim(),
+          String(body.cover_image_url || "").trim(),
+          status,
+          publishedAt
+        ).run();
+
+        return json({ ok: true, id: result.meta?.last_row_id || null });
+      }
+
+      const blogAdminMatch = path.match(/^\/api\/admin\/blog\/(\d+)$/);
+
+      if (blogAdminMatch && request.method === "PUT") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const id = Number(blogAdminMatch[1]);
+        const body = await request.json();
+        const title = String(body.title || "").trim();
+        const content = String(body.content || "").trim();
+        if (!title || !content) return json({ error: "Titel und Text werden benötigt." }, 400);
+
+        const existing = await env.DB.prepare(
+          "SELECT published_at FROM blog_posts WHERE id = ? LIMIT 1"
+        ).bind(id).first();
+        if (!existing) return json({ error: "Beitrag nicht gefunden." }, 404);
+
+        const status = body.status === "published" ? "published" : "draft";
+        const publishedAt = (status === "published" && !existing.published_at)
+          ? new Date().toISOString()
+          : existing.published_at;
+
+        await env.DB.prepare(`
+          UPDATE blog_posts
+          SET title = ?, excerpt = ?, content = ?, category = ?, tags = ?, cover_image_url = ?, status = ?, published_at = ?
+          WHERE id = ?
+        `).bind(
+          title,
+          String(body.excerpt || "").trim() || deriveExcerpt(content),
+          content,
+          String(body.category || "").trim(),
+          String(body.tags || "").trim(),
+          String(body.cover_image_url || "").trim(),
+          status,
+          publishedAt,
+          id
+        ).run();
+
+        return json({ ok: true, id });
+      }
+
+      if (blogAdminMatch && request.method === "DELETE") {
+        if (!await isAdmin(request, env)) return json({ error: "Forbidden" }, 403);
+        const id = Number(blogAdminMatch[1]);
+        await env.DB.prepare("DELETE FROM blog_posts WHERE id = ?").bind(id).run();
+        return json({ ok: true });
+      }
+
+      if (path === "/api/admin/upload-blog-image" && request.method === "POST") {
+        if (!(await isAdmin(request, env))) return json({ error: "Forbidden" }, 403);
+
+        const formData = await request.formData();
+        const file = formData.get("file");
+        if (!file || typeof file === "string") return json({ error: "Keine Datei empfangen." }, 400);
+
+        const MAX_BYTES = 8 * 1024 * 1024;
+        if (typeof file.size === "number" && file.size > MAX_BYTES) {
+          return json({ error: "Datei ist zu groß (max. 8 MB)." }, 400);
+        }
+
+        const ext = file.name && file.name.includes(".")
+          ? file.name.split(".").pop().toLowerCase()
+          : "jpg";
+        const ALLOWED_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+        if (!ALLOWED_TYPES[ext]) return json({ error: "Nur jpg, jpeg, png oder webp erlaubt." }, 400);
+
+        const key = `blog/${Date.now()}.${ext}`;
+        await env.ZIEGEN_BILDER.put(key, file.stream(), {
+          httpMetadata: { contentType: ALLOWED_TYPES[ext] }
+        });
+
+        const publicUrl = `https://pub-78b8df31088d4faba7413d07037dbd2e.r2.dev/${key}`;
+        return json({ ok: true, image_url: publicUrl });
       }
 
       if (path === "/api/votes/current" && request.method === "POST") {

@@ -29,6 +29,9 @@
 
   <div id="player-count" style="margin:10px 0 6px 0;font-size:14px;color:var(--clr-text-muted)"></div>
 
+  <!-- Neuester Blogbeitrag -->
+  <div id="blog-teaser" class="hidden"></div>
+
   <!-- Suchfeld (Mobil) -->
   <div style="position:relative;margin-bottom:16px">
     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:16px;pointer-events:none">🔍</span>
@@ -96,6 +99,29 @@ async function loadPlayerCount() {
   } catch (e) { console.warn('Spielerzahl konnte nicht geladen werden.', e); }
 }
 
+async function loadBlogTeaser() {
+  const box = document.getElementById('blog-teaser');
+  try {
+    const posts = await fetchBlogPosts();
+    if (!posts.length) return;
+    const p = posts[0];
+    box.innerHTML = `
+      <a href="/OhmoorZiegen/beitrag.html?id=${p.id}" style="text-decoration:none;color:inherit">
+        <div style="display:flex;gap:14px;align-items:center;background:var(--clr-card);border:1px solid var(--clr-border-soft);border-radius:var(--radius-lg);padding:12px;margin-bottom:16px">
+          ${p.cover_image_url
+            ? `<img src="${escHtml(p.cover_image_url)}" alt="${escHtml(p.title)}" style="width:72px;height:72px;object-fit:cover;border-radius:var(--radius-md);flex-shrink:0">`
+            : `<span style="font-size:2rem;flex-shrink:0">📰</span>`}
+          <div style="min-width:0">
+            <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Neuester Blogbeitrag</div>
+            <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.title)}</div>
+            <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">${escHtml(blogDateLabel(p.published_at))} · Weiterlesen →</div>
+          </div>
+        </div>
+      </a>`;
+    box.classList.remove('hidden');
+  } catch (e) { console.warn('Blogbeitrag konnte nicht geladen werden.', e); }
+}
+
 async function initPage() {
   try { goats = await getGoatsFromApi(); }
   catch (e) { console.error('API fehlgeschlagen, nutze Fallback.', e); goats = getGoats(); }
@@ -108,6 +134,7 @@ async function initPage() {
   filtered = [...goats];
   renderGallery();
   await loadPlayerCount();
+  await loadBlogTeaser();
 }
 
 function onSearch() {
