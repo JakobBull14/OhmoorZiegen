@@ -171,9 +171,9 @@ async function loadMonthTeaser() {
             ? `<img src="${escHtml(leader.main_image_url)}" alt="${escHtml(leader.name)}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;flex-shrink:0">`
             : `<span style="font-size:2rem;flex-shrink:0">🐐</span>`}
           <div style="min-width:0">
-            <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">🗳️ Abstimmung läuft · ${escHtml(results.month_label || '')}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--clr-blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⭐ Wahl zur Ziege des Monats · ${escHtml(results.month_label || '')}</div>
             <div style="font-weight:600;font-size:14px">Aktuell führt ${escHtml(leader.name)}</div>
-            <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">Jetzt mitstimmen →</div>
+            <div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px">Die Abstimmung läuft noch – jetzt mitstimmen →</div>
           </div>
         </div>
       </a>`;
