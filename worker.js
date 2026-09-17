@@ -418,6 +418,80 @@ if (path === '/api/admin/about' && request.method === 'PUT') {
   return json({ ok: true });
 }
 
+// ================= GLOBALE SUCHE =================
+const ABOUT_LABELS = {
+  ohmoor_ziegen: "Die Ohmoor-Ziegen",
+  warum_schule: "Warum gibt es Ziegen an der Schule?",
+  was_lernen: "Was lernen Schülerinnen und Schüler durch die Tiere?",
+  wer_kuemmert: "Wer kümmert sich um die Ziegen?",
+  schulalltag: "Schulalltag, Verantwortung & Tierwohl",
+  geschichte: "Geschichte des Ziegenprojekts"
+};
+
+if (path === '/api/search' && request.method === 'GET') {
+  const q = (url.searchParams.get('q') || '').trim();
+  if (q.length < 2) return json([]);
+  const like = `%${q}%`;
+  const results = [];
+
+  const { results: goats } = await env.DB.prepare(`
+    SELECT id, name, nickname, character
+    FROM goats
+    WHERE name LIKE ?1 OR nickname LIKE ?1 OR breed LIKE ?1 OR character LIKE ?1
+       OR story LIKE ?1 OR special_skill LIKE ?1 OR favorite_food LIKE ?1
+    LIMIT 15
+  `).bind(like).all();
+  for (const g of goats || []) {
+    results.push({ type: 'goat', title: g.name, snippet: g.nickname || g.character || '', url: `/OhmoorZiegen/ziege.html?id=${g.id}` });
+  }
+
+  const { results: posts } = await env.DB.prepare(`
+    SELECT id, title, excerpt
+    FROM blog_posts
+    WHERE status = 'published' AND (title LIKE ?1 OR content LIKE ?1 OR category LIKE ?1 OR tags LIKE ?1)
+    LIMIT 15
+  `).bind(like).all();
+  for (const p of posts || []) {
+    results.push({ type: 'blog', title: p.title, snippet: p.excerpt || '', url: `/OhmoorZiegen/beitrag.html?id=${p.id}` });
+  }
+
+  const { results: facts } = await env.DB.prepare(`
+    SELECT id, title, content
+    FROM facts
+    WHERE is_active = 1 AND (title LIKE ?1 OR content LIKE ?1)
+    LIMIT 15
+  `).bind(like).all();
+  for (const f of facts || []) {
+    results.push({ type: 'fact', title: f.title, snippet: (f.content || '').slice(0, 120), url: `/OhmoorZiegen/fakten.html` });
+  }
+
+  const { results: photos } = await env.DB.prepare(`
+    SELECT ph.id, ph.caption, ph.goat_id, g.name AS goat_name
+    FROM gallery_photos ph
+    LEFT JOIN goats g ON g.id = ph.goat_id
+    WHERE ph.active = 1 AND ph.caption LIKE ?1
+    LIMIT 10
+  `).bind(like).all();
+  for (const ph of photos || []) {
+    results.push({
+      type: 'photo',
+      title: ph.caption,
+      snippet: ph.goat_name ? `Foto von ${ph.goat_name}` : 'Foto',
+      url: ph.goat_id ? `/OhmoorZiegen/galerie.html?goat=${ph.goat_id}` : `/OhmoorZiegen/galerie.html`
+    });
+  }
+
+  const { results: about } = await env.DB.prepare(
+    "SELECT key, value FROM app_settings WHERE key LIKE 'about_%' AND value LIKE ?1"
+  ).bind(like).all();
+  for (const row of about || []) {
+    const key = row.key.replace(/^about_/, '');
+    results.push({ type: 'about', title: ABOUT_LABELS[key] || 'Über uns', snippet: (row.value || '').slice(0, 120), url: `/OhmoorZiegen/ueber-uns.html` });
+  }
+
+  return json(results);
+}
+
 // ================= FEEDBACK SUBMIT / UPDATE =================
 if (path === '/api/feedback' && request.method === 'POST') {
   const body = await request.json();

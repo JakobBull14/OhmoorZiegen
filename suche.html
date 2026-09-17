@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Schulziegen – Suche</title>
+<link rel="icon" type="image/svg+xml" href="/OhmoorZiegen/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/OhmoorZiegen/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/OhmoorZiegen/favicon-16.png">
+<link rel="apple-touch-icon" href="/OhmoorZiegen/apple-touch-icon.png">
+<link rel="manifest" href="/OhmoorZiegen/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="stylesheet" href="/OhmoorZiegen/style.css">
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="app-main">
+
+  <div class="page-title">🔍 Suche</div>
+  <p class="section-sub">Durchsuche Ziegen, Blog, Fakten, Fotos und „Über uns" auf einmal.</p>
+
+  <div style="position:relative;margin-bottom:20px">
+    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--clr-text-faint);font-size:18px;pointer-events:none">🔍</span>
+    <input type="text" id="search-input"
+           style="width:100%;padding:14px 16px 14px 42px;border:1px solid var(--clr-border);border-radius:var(--radius-full);background:var(--clr-card);color:var(--clr-text);font-family:var(--font-body);font-size:16px;outline:none;box-sizing:border-box"
+           placeholder="Wonach suchst du?" autocomplete="off" autofocus>
+  </div>
+
+  <div id="search-results">
+    <div class="empty-state">
+      <span class="empty-state-icon">🔍</span>
+      <div class="empty-state-text">Gib oben einen Suchbegriff ein</div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/OhmoorZiegen/data.js"></script>
+<script src="/OhmoorZiegen/nav.js"></script>
+<script>
+buildNav('suche');
+
+const input = document.getElementById('search-input');
+const box = document.getElementById('search-results');
+let debounceTimer = null;
+
+const params = new URLSearchParams(location.search);
+const initialQ = params.get('q') || '';
+if (initialQ) { input.value = initialQ; runSearch(initialQ); }
+
+input.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  const q = input.value.trim();
+  if (q.length < 2) {
+    box.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">🔍</span>
+        <div class="empty-state-text">${q.length === 0 ? 'Gib oben einen Suchbegriff ein' : 'Bitte mindestens 2 Zeichen eingeben'}</div>
+      </div>`;
+    return;
+  }
+  debounceTimer = setTimeout(() => runSearch(q), 300);
+});
+
+async function runSearch(q) {
+  box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Suche läuft ...</p>';
+  try {
+    const results = await fetchSearchResults(q);
+    renderResults(results);
+  } catch (e) {
+    box.innerHTML = '<p style="font-size:14px;color:var(--clr-text-muted)">Suche fehlgeschlagen.</p>';
+  }
+}
+
+function renderResults(results) {
+  if (!results.length) {
+    box.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">🤷</span>
+        <div class="empty-state-text">Keine Treffer gefunden</div>
+      </div>`;
+    return;
+  }
+
+  box.innerHTML = SEARCH_GROUPS.map(group => {
+    const items = results.filter(r => r.type === group.type);
+    if (!items.length) return '';
+    return `
+      <div style="margin-bottom:22px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--clr-text-faint);margin-bottom:8px">${group.icon} ${group.label} (${items.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${items.map(r => `
+            <a href="${escHtml(r.url)}" style="display:block;padding:12px 14px;border:1px solid var(--clr-border-soft);border-radius:12px;background:var(--clr-bg);text-decoration:none;color:inherit">
+              <div style="font-weight:600;font-size:14px">${escHtml(r.title || '')}</div>
+              ${r.snippet ? `<div style="font-size:12px;color:var(--clr-text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.snippet)}</div>` : ''}
+            </a>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

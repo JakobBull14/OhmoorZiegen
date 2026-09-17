@@ -15,6 +15,7 @@ function buildNav(activePage) {
 
   const pages = [
     { id:'gallery',    href:'/OhmoorZiegen/index.html',      icon:'🐐', label:'Ziegen'    },
+    { id:'suche',     href:'/OhmoorZiegen/suche.html',       icon:'🔍', label:'Suche'     },
     { id:'blog',      href:'/OhmoorZiegen/blog.html',        icon:'📰', label:'Blog'      },
     { id:'galerie',   href:'/OhmoorZiegen/galerie.html',     icon:'📸', label:'Galerie'   },
     { id:'monat',     href:'/OhmoorZiegen/monat.html',       icon:'⭐', label:'Monat'     },

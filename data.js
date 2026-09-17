@@ -701,3 +701,20 @@ async function adminSaveAboutContent(content, adminPassword) {
     body: JSON.stringify(content)
   });
 }
+
+// ══════════════════════════════════════════
+// GLOBALE SUCHE
+// ══════════════════════════════════════════
+async function fetchSearchResults(q) {
+  const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Search API ${res.status}`);
+  return await res.json();
+}
+
+const SEARCH_GROUPS = [
+  { type: 'goat',  label: 'Ziegen',    icon: '🐐' },
+  { type: 'blog',  label: 'Blog',      icon: '📰' },
+  { type: 'fact',  label: 'Fakten',    icon: '💡' },
+  { type: 'photo', label: 'Fotos',     icon: '📸' },
+  { type: 'about', label: 'Über uns',  icon: '🧑‍🌾' },
+];
