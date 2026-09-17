@@ -326,6 +326,59 @@
       <div class="admin-wrap">
 
         <div class="admin-section">
+          <div class="admin-section-title" onclick="toggleAccordion(this)">📰 Blog verwalten</div>
+          <div class="accordion-body">
+            <div style="margin:14px 0 16px">
+              <button class="btn-primary" onclick="loadBlogAdmin()">Beiträge neu laden</button>
+            </div>
+            <div id="blog-list"></div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
+              <div id="blog-form-title" style="font-weight:700;margin-bottom:14px">Neuen Beitrag anlegen</div>
+
+              <div class="f-group"><label>Titel *</label><input id="b-title" placeholder="z.B. Frühling im Ziegengehege"></div>
+
+              <div class="f-group" style="margin-top:12px">
+                <label>Kategorie</label>
+                <select id="b-category" onchange="updateCategoryPreview()"></select>
+                <div id="b-category-preview" style="margin-top:6px"></div>
+              </div>
+
+              <div class="f-group" style="margin-top:12px">
+                <label>Titelbild</label>
+                <div id="blog-cover-preview" style="margin-bottom:8px"></div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="b-cover-file" accept="image/jpeg,image/png,image/webp"
+                         class="form-input" style="flex:1;min-width:0;padding:6px 10px;font-size:13px">
+                  <button class="btn-primary" id="b-cover-upload-btn" onclick="uploadBlogCover()"
+                          style="white-space:nowrap;padding:8px 14px;font-size:13px">Hochladen</button>
+                </div>
+                <input id="b-cover-url" class="form-input" style="margin-top:8px;font-size:13px" placeholder="oder Bild-URL direkt eingeben">
+              </div>
+
+              <div class="f-group" style="margin-top:12px"><label>Text *</label><textarea id="b-content" style="min-height:160px" placeholder="Der Beitragstext"></textarea></div>
+
+              <details style="margin-top:14px">
+                <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--clr-text-muted)">Weitere Optionen (Kurzbeschreibung, Tags)</summary>
+                <div class="f-group" style="margin-top:12px"><label>Kurzbeschreibung (optional, sonst automatisch aus dem Text)</label><textarea id="b-excerpt" placeholder="Wird sonst automatisch erzeugt"></textarea></div>
+                <div class="f-group" style="margin-top:12px"><label>Tags (mit Komma getrennt)</label><input id="b-tags" placeholder="z.B. Frühling, Nachwuchs"></div>
+              </details>
+
+              <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--clr-border)">
+                <div id="blog-status-row" class="hidden" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--clr-text-muted)">
+                  Aktueller Status: <span id="blog-status-badge"></span>
+                </div>
+                <div class="btn-row">
+                  <button class="btn-secondary" id="b-save-draft-btn" onclick="saveBlogPost('draft')">💾 Entwurf speichern</button>
+                  <button class="btn-primary" id="b-publish-btn" onclick="saveBlogPost('published')" style="background:var(--clr-green)">🌐 Veröffentlichen</button>
+                  <button class="btn-danger hidden" id="b-cancel-btn" onclick="cancelEditBlogPost()">Abbrechen</button>
+                </div>
+              </div>
+              <div id="blog-msg"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section closed">
           <div class="admin-section-title" onclick="toggleAccordion(this)">❓ Quiz verwalten</div>
           <div class="accordion-body">
             <div style="margin:14px 0 16px">
@@ -348,57 +401,6 @@
               </div>
               <div class="btn-row"><button class="btn-primary" onclick="addQuizQuestion()">Frage speichern</button></div>
               <div id="quiz-msg"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-section closed">
-          <div class="admin-section-title" onclick="toggleAccordion(this)">📰 Blog verwalten</div>
-          <div class="accordion-body">
-            <div style="margin:14px 0 16px">
-              <button class="btn-primary" onclick="loadBlogAdmin()">Beiträge neu laden</button>
-            </div>
-            <div id="blog-list"></div>
-            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--clr-border)">
-              <div id="blog-form-title" style="font-weight:700;margin-bottom:10px">Neuen Beitrag anlegen</div>
-              <div class="form-grid">
-                <div class="f-group"><label>Titel *</label><input id="b-title" placeholder="z.B. Frühling im Ziegengehege"></div>
-                <div class="f-group">
-                  <label>Kategorie</label>
-                  <select id="b-category" onchange="updateCategoryPreview()"></select>
-                  <div id="b-category-preview" style="margin-top:6px"></div>
-                </div>
-              </div>
-              <div class="f-group" style="margin-top:12px"><label>Tags (mit Komma getrennt)</label><input id="b-tags" placeholder="z.B. Frühling, Nachwuchs"></div>
-
-              <div class="f-group" style="margin-top:12px">
-                <label>Titelbild</label>
-                <div id="blog-cover-preview" style="margin-bottom:8px"></div>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="b-cover-file" accept="image/jpeg,image/png,image/webp"
-                         class="form-input" style="flex:1;min-width:0;padding:6px 10px;font-size:13px">
-                  <button class="btn-primary" id="b-cover-upload-btn" onclick="uploadBlogCover()"
-                          style="white-space:nowrap;padding:8px 14px;font-size:13px">Hochladen</button>
-                </div>
-                <input id="b-cover-url" class="form-input" style="margin-top:8px;font-size:13px" placeholder="oder Bild-URL direkt eingeben">
-              </div>
-
-              <div class="f-group" style="margin-top:12px"><label>Kurzbeschreibung (optional, sonst automatisch)</label><textarea id="b-excerpt" placeholder="Wird sonst automatisch aus dem Text erzeugt"></textarea></div>
-              <div class="f-group" style="margin-top:12px"><label>Text *</label><textarea id="b-content" style="min-height:160px" placeholder="Der Beitragstext"></textarea></div>
-
-              <div class="f-group" style="margin-top:12px">
-                <label>Status</label>
-                <select id="b-status">
-                  <option value="draft">Entwurf</option>
-                  <option value="published">Veröffentlicht</option>
-                </select>
-              </div>
-
-              <div class="btn-row">
-                <button class="btn-primary" id="b-save-btn" onclick="saveBlogPost()">Beitrag speichern</button>
-                <button class="btn-danger hidden" id="b-cancel-btn" onclick="cancelEditBlogPost()">Abbrechen</button>
-              </div>
-              <div id="blog-msg"></div>
             </div>
           </div>
         </div>
@@ -1058,6 +1060,13 @@ function renderBlogCoverPreview(url) {
     style="max-width:220px;max-height:140px;border-radius:12px;border:1px solid var(--clr-border);object-fit:cover">`;
 }
 
+function renderBlogStatusBadge(status) {
+  const badge = document.getElementById('blog-status-badge');
+  badge.innerHTML = status === 'published'
+    ? `<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--clr-green-light);color:var(--clr-green)">Veröffentlicht</span>`
+    : `<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--clr-bg-subtle);color:var(--clr-text-muted)">Entwurf</span>`;
+}
+
 function startEditBlogPost(id) {
   const post = cloudBlogPosts.find(p => p.id === id);
   if (!post) return;
@@ -1069,11 +1078,13 @@ function startEditBlogPost(id) {
   document.getElementById('b-tags').value = post.tags || '';
   document.getElementById('b-excerpt').value = post.excerpt || '';
   document.getElementById('b-content').value = post.content || '';
-  document.getElementById('b-status').value = post.status || 'draft';
   pendingBlogCoverUrl = post.cover_image_url || '';
   document.getElementById('b-cover-url').value = pendingBlogCoverUrl;
   renderBlogCoverPreview(pendingBlogCoverUrl);
-  document.getElementById('b-save-btn').textContent = 'Änderungen speichern';
+  document.getElementById('blog-status-row').classList.remove('hidden');
+  renderBlogStatusBadge(post.status || 'draft');
+  document.getElementById('b-save-draft-btn').textContent = '💾 Als Entwurf zurückziehen';
+  document.getElementById('b-publish-btn').textContent = '🌐 Veröffentlichen';
   document.getElementById('b-cancel-btn').classList.remove('hidden');
   document.getElementById('blog-form-title').textContent = 'Beitrag bearbeiten';
   const sec = document.getElementById('b-title').closest('.admin-section');
@@ -1085,10 +1096,11 @@ function cancelEditBlogPost() {
   editingBlogId = null;
   pendingBlogCoverUrl = '';
   ['b-title','b-category','b-tags','b-excerpt','b-content','b-cover-url'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('b-status').value = 'draft';
   updateCategoryPreview();
   renderBlogCoverPreview('');
-  document.getElementById('b-save-btn').textContent = 'Beitrag speichern';
+  document.getElementById('blog-status-row').classList.add('hidden');
+  document.getElementById('b-save-draft-btn').textContent = '💾 Entwurf speichern';
+  document.getElementById('b-publish-btn').textContent = '🌐 Veröffentlichen';
   document.getElementById('b-cancel-btn').classList.add('hidden');
   document.getElementById('blog-form-title').textContent = 'Neuen Beitrag anlegen';
 }
@@ -1110,7 +1122,7 @@ async function uploadBlogCover() {
   finally { btn.disabled = false; btn.textContent = 'Hochladen'; }
 }
 
-async function saveBlogPost() {
+async function saveBlogPost(status) {
   const title = document.getElementById('b-title').value.trim();
   const content = document.getElementById('b-content').value.trim();
   if (!title || !content) { showMsg('blog-msg', 'Titel und Text werden benötigt.', 'err'); return; }
@@ -1123,16 +1135,16 @@ async function saveBlogPost() {
     excerpt: document.getElementById('b-excerpt').value.trim(),
     content,
     cover_image_url: coverUrl,
-    status: document.getElementById('b-status').value
+    status
   };
 
   try {
     if (editingBlogId) {
       await adminUpdateBlogPost(editingBlogId, post, adminPw);
-      showMsg('blog-msg', 'Beitrag wurde aktualisiert.', 'ok');
+      showMsg('blog-msg', status === 'published' ? 'Beitrag ist jetzt veröffentlicht.' : 'Beitrag wurde als Entwurf gespeichert.', 'ok');
     } else {
       await adminAddBlogPost(post, adminPw);
-      showMsg('blog-msg', 'Beitrag wurde gespeichert.', 'ok');
+      showMsg('blog-msg', status === 'published' ? 'Beitrag wurde veröffentlicht.' : 'Beitrag wurde als Entwurf gespeichert.', 'ok');
     }
     cancelEditBlogPost();
     await loadBlogAdmin();
